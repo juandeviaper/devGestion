@@ -1,0 +1,30 @@
+{
+    "include": [
+        "api",
+        "core",
+        "scripts"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "venv"
+    ],
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "extraPaths": [
+                ".",
+                "core",
+                "api"
+            ]
+        }
+    ],
+    "venvPath": ".",
+    "venv": "venv",
+    "pythonPath": "./venv/Scripts/python.exe",
+    "typeCheckingMode": "basic",
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false,
+    "pythonVersion": "3.13",
+    "pythonPlatform": "Windows"
+}

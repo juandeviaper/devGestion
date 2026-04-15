@@ -1,0 +1,27 @@
+# Ruff configuration for DevGestión Backend
+target-version = "py313"
+line-length = 100
+
+[lint]
+# Enable Pyflakes (F), pycodestyle (E, W), and isort (I)
+select = ["F", "E", "W", "I", "N", "UP", "B", "C4", "SIM", "ARG"]
+ignore = [
+    "E501",    # Line too long (handled by line-length and formatter)
+    "W191",    # Tab indentation
+    "ARG001",  # Unused function argument (common in Django views)
+    "ARG002",  # Unused method argument (common in Django views)
+]
+
+[lint.per-file-ignores]
+"scripts/*.py" = ["E402"]
+"core/settings.py" = ["E402"]
+
+[lint.isort]
+combine-as-imports = true
+lines-after-imports = 2
+
+[format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
