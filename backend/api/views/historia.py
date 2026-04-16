@@ -22,6 +22,10 @@ class EpicaViewSet(viewsets.ModelViewSet):
     serializer_class = EpicaSerializer
     permission_classes = [permissions.IsAuthenticated, IsProjectMember]
 
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para gestionar épicas en este proyecto"})
+
     def get_queryset(self):
         user = self.request.user
         queryset = Epica.objects.select_related('proyecto').all()
