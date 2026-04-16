@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db.models import Q
 from rest_framework import permissions
 
 from .models import Proyecto, ProyectoMiembro
@@ -52,7 +53,20 @@ class IsProjectOwner(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
+        if not (request.user and request.user.is_authenticated):
+            return False
+        
+        if request.user.is_staff:
+            return True
+
+        if request.method == 'POST':
+            proyecto_id = request.data.get('proyecto')
+            if proyecto_id:
+                return Proyecto.objects.filter(
+                    (Q(creador=request.user) | Q(miembros__usuario=request.user, miembros__rol_proyecto='dueño')),
+                    id=proyecto_id
+                ).exists()
+        return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
@@ -62,7 +76,18 @@ class IsProjectOwner(permissions.BasePermission):
         if user.is_staff:
             return True
 
-        proyecto = obj if isinstance(obj, Proyecto) else getattr(obj, 'proyecto', None)
+        # Extraer el proyecto dependiendo de si el objeto es un Proyecto, tiene relación directa, o está a 1 nivel de profundidad (ej. CriterioAceptacion -> Historia)
+        proyecto = None
+        if isinstance(obj, Proyecto):
+            proyecto = obj
+        elif hasattr(obj, 'proyecto'):
+            proyecto = obj.proyecto
+        elif hasattr(obj, 'historia') and obj.historia:
+            proyecto = getattr(obj.historia, 'proyecto', None)
+        elif hasattr(obj, 'tarea') and obj.tarea:
+            proyecto = getattr(obj.tarea, 'proyecto', None)
+        elif hasattr(obj, 'bug') and obj.bug:
+            proyecto = getattr(obj.bug, 'proyecto', None)
 
         if not proyecto:
             return False
@@ -83,7 +108,20 @@ class IsProjectMember(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
+        if not (request.user and request.user.is_authenticated):
+            return False
+
+        if request.user.is_staff:
+            return True
+
+        if request.method == 'POST':
+            proyecto_id = request.data.get('proyecto')
+            if proyecto_id:
+                return Proyecto.objects.filter(
+                    (Q(creador=request.user) | Q(miembros__usuario=request.user)),
+                    id=proyecto_id
+                ).exists()
+        return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
@@ -93,7 +131,18 @@ class IsProjectMember(permissions.BasePermission):
         if user.is_staff:
             return True
 
-        proyecto = obj if isinstance(obj, Proyecto) else getattr(obj, 'proyecto', None)
+        proyecto = None
+        if isinstance(obj, Proyecto):
+            proyecto = obj
+        elif hasattr(obj, 'proyecto'):
+            proyecto = obj.proyecto
+        elif hasattr(obj, 'historia') and obj.historia:
+            proyecto = getattr(obj.historia, 'proyecto', None)
+        elif hasattr(obj, 'tarea') and obj.tarea:
+            proyecto = getattr(obj.tarea, 'proyecto', None)
+        elif hasattr(obj, 'bug') and obj.bug:
+            proyecto = getattr(obj.bug, 'proyecto', None)
+            
         if not proyecto:
             return False
 
@@ -101,6 +150,41 @@ class IsProjectMember(permissions.BasePermission):
             return True
 
         return ProyectoMiembro.objects.filter(proyecto=proyecto, usuario=user).exists()
+
+
+class IsOwnerOrPublicReadOnly(permissions.BasePermission):
+    """
+    Permite acceso total a dueños y miembros (para sus respectivos niveles).
+    Permite lectura (GET, HEAD, OPTIONS) a cualquier usuario autenticado si el proyecto es público.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        proyecto = None
+        if isinstance(obj, Proyecto):
+            proyecto = obj
+        elif hasattr(obj, 'proyecto'):
+            proyecto = obj.proyecto
+        elif hasattr(obj, 'historia') and obj.historia:
+            proyecto = getattr(obj.historia, 'proyecto', None)
+        elif hasattr(obj, 'tarea') and obj.tarea:
+            proyecto = getattr(obj.tarea, 'proyecto', None)
+        elif hasattr(obj, 'bug') and obj.bug:
+            proyecto = getattr(obj.bug, 'proyecto', None)
+            
+        if not proyecto:
+            return False
+
+        # Si el proyecto es público, permitimos lectura a cualquiera
+        if proyecto.visibilidad == 'publico' and request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Si no es público o es una acción de escritura, delegamos a IsProjectMember
+        # (o IsProjectOwner según la vista, pero aquí validamos acceso base)
+        return IsProjectMember().has_object_permission(request, view, obj)
 
 
 class IsInvitationParticipant(permissions.BasePermission):
@@ -164,19 +248,16 @@ class IsOwnerOrAdminToCreateUpdate(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # Si es un método de edición/borrado, solo el dueño puede proceder plenamente.
-        # Los colaboradores usarán CanUpdateStatusIfAssigned para cambios específicos.
-        if request.method in ['PUT', 'PATCH', 'DELETE']:
+        # Si es un método de edición, permitimos a cualquier miembro del proyecto.
+        if request.method in ['PUT', 'PATCH']:
+            return IsProjectMember().has_object_permission(request, view, obj)
+            
+        # Si es borrado, solo el dueño puede proceder.
+        if request.method == 'DELETE':
             return IsProjectOwner().has_object_permission(request, view, obj)
 
-        # Para otros métodos (como POST de creación, manejado en has_permission), 
-        # permitimos si es miembro o dueño.
-        return (
-            ProyectoMiembro.objects.filter(
-                proyecto=obj.proyecto, usuario=request.user
-            ).exists()
-            or obj.proyecto.creador == request.user
-        )
+        # Para otros métodos, permitimos si es miembro o dueño.
+        return IsProjectMember().has_object_permission(request, view, obj)
 
 
 class CanUpdateStatusIfAssigned(permissions.BasePermission):

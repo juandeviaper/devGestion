@@ -1,0 +1,125 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@devgestion.com",
+      "full_name": "Administrador Principal",
+      "password": "JP311juan.",
+      "is_staff": true,
+      "specialty": "Full Stack, DevOps"
+    },
+    {
+      "id": 2,
+      "username": "jdoe",
+      "email": "jdoe@example.com",
+      "full_name": "John Doe",
+      "password": "password123",
+      "is_staff": false,
+      "specialty": "React UI/UX"
+    },
+    {
+      "id": 3,
+      "username": "mrosa",
+      "email": "mrosa@example.com",
+      "full_name": "Maria Rosa",
+      "password": "password123",
+      "is_staff": false,
+      "specialty": "Backend Python"
+    }
+  ],
+  "projects": [
+    {
+      "id": 1,
+      "name": "DevGestión E-commerce",
+      "description": "Plataforma de comercio electrónico de alto rendimiento con integración de pagos y dashboard de analítica.",
+      "roles": [
+        { "user_id": 1, "role": "Owner" },
+        { "user_id": 2, "role": "Colaborador" }
+      ],
+      "sprints": [
+        {
+          "name": "Sprint 1: Core Features",
+          "goal": "Implementar carrito de compras y pasarela de pago base.",
+          "start_date": "2026-04-01",
+          "end_date": "2026-04-14",
+          "status": "cerrado",
+          "work_items": [
+            {
+              "type": "Historia",
+              "titulo": "Implementar Stripe",
+              "description": "Como usuario quiero pagar con tarjeta para completar mi compra.",
+              "prioridad": "alta",
+              "estado": "terminado",
+              "asignado_a": 1,
+              "criterios_aceptacion": "El pago debe procesarse y redirigir a éxito."
+            },
+            {
+              "type": "Tarea",
+              "titulo": "Configurar Webhooks",
+              "descripcion": "Escuchar eventos de Stripe para actualizar estado del pedido.",
+              "prioridad": "media",
+              "estado": "terminado",
+              "asignado_a": 3
+            }
+          ]
+        },
+        {
+          "name": "Sprint 2: UI Polish",
+          "goal": "Mejorar la experiencia de usuario en el checkout.",
+          "start_date": "2026-04-15",
+          "end_date": "2026-04-28",
+          "status": "activo",
+          "work_items": [
+            {
+              "type": "Historia",
+              "titulo": "Checkout en un paso",
+              "description": "Como usuario quiero un checkout rápido para no perder tiempo.",
+              "prioridad": "alta",
+              "estado": "en progreso",
+              "asignado_a": 2,
+              "criterios_aceptacion": "Todo el formulario debe estar en una sola página."
+            },
+            {
+              "type": "Bug",
+              "titulo": "Error en móvil al añadir al carrito",
+              "descripcion": "El botón se superpone con el footer en iPhone 13.",
+              "prioridad": "critica",
+              "estado": "nuevo",
+              "asignado_a": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "App de Gestión de Inventario",
+      "description": "Sistema interno para control de stock y alertas de reabastecimiento automático.",
+      "roles": [
+        { "user_id": 1, "role": "Owner" },
+        { "user_id": 3, "role": "Colaborador" }
+      ],
+      "sprints": [
+        {
+          "name": "Sprint Inicial: Inventario Base",
+          "goal": "Carga de productos y visualización de lista.",
+          "start_date": "2026-04-10",
+          "end_date": "2026-04-24",
+          "status": "activo",
+          "work_items": [
+            {
+              "type": "Historia",
+              "titulo": "Importar desde Excel",
+              "description": "Como gestor quiero cargar productos masivamente para ahorrar tiempo.",
+              "prioridad": "media",
+              "estado": "pendiente",
+              "asignado_a": 3,
+              "criterios_aceptacion": "Soportar archivos .xlsx de hasta 5000 filas."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

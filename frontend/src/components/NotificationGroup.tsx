@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Bell, BellOff, Mail, ChevronRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { notificationService, invitationService } from '../services/api';
+import { authService } from '../services/authService';
 import { toast } from 'react-hot-toast';
 import type { Notification, Invitation } from '../types';
 import axios from 'axios';
-
 const NotificationGroup: React.FC = () => {
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [invitationCount, setInvitationCount] = useState(0);
     const [showNotifications, setShowNotifications] = useState(false);
     const [loading, setLoading] = useState(false);
+    
+    const user = authService.getUser();
     
     const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
 
@@ -22,7 +24,9 @@ const NotificationGroup: React.FC = () => {
                 invitationService.getAll()
             ]);
             setNotifications(notifRes.data);
-            setInvitationCount(invRes.data.filter((inv: Invitation) => inv.estado === 'pendiente').length);
+            setInvitationCount(
+                invRes.data.filter((inv: Invitation) => inv.estado === 'pendiente' && inv.usuario_invitado === user?.id).length
+            );
         } catch (err: unknown) {
             console.error('Error fetching notifications/invitations:', err);
         }

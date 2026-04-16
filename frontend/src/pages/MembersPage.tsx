@@ -75,7 +75,7 @@ const MembersPage: React.FC = () => {
         return () => clearTimeout(timer);
     }, [searchQuery, handleSearch]);
 
-    const handleSendInvitation = async (userId: number) => {
+    const handleSendInvitation = async (userId: number, username: string) => {
         if (!projectId) return;
         try {
             await invitationService.create({
@@ -83,7 +83,7 @@ const MembersPage: React.FC = () => {
                 usuario_invitado: userId,
                 rol_invitado: inviteRole
             });
-            toast.success('Invitación enviada con éxito');
+            toast.success(`Tu invitación fue enviada con éxito a @${username} y está pendiente de confirmación`, { duration: 5000 });
             setIsInviteModalOpen(false);
             setSearchQuery('');
             setSearchResults([]);
@@ -309,7 +309,7 @@ const MembersPage: React.FC = () => {
                                                         <option value="dueño">Dueño</option>
                                                     </select>
                                                     <button 
-                                                        onClick={() => handleSendInvitation(userResult.id)}
+                                                        onClick={() => handleSendInvitation(userResult.id, userResult.username)}
                                                         className="p-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200 group-hover:scale-105 transition-transform"
                                                     >
                                                         <ArrowRight className="w-4 h-4" />

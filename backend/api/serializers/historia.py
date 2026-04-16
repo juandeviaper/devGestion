@@ -91,6 +91,20 @@ class HistoriaUsuarioSerializer(serializers.ModelSerializer):
                 data[field] = None
         return super().to_internal_value(data)
 
+    def validate(self, data):
+        # Validación universal de asignación de Sprint (Previene modificaciones prohibidas via API pura)
+        if 'sprint' in data:
+            new_sprint = data.get('sprint')
+            # Bypass si es un UPDATE y solo estamos re-guardando en el mismo sprint
+            if self.instance and self.instance.sprint == new_sprint:
+                pass
+            elif new_sprint:
+                if new_sprint.estado == 'activo':
+                    raise serializers.ValidationError({"sprint": "No se pueden agregar historias a un sprint en curso."})
+                elif new_sprint.estado == 'terminado':
+                    raise serializers.ValidationError({"sprint": "No se pueden asignar historias a un sprint cerrado."})
+        return data
+
     def create(self, validated_data):
         from ..services.workitem_service import WorkItemService
 

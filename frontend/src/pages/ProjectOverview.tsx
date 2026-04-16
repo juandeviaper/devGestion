@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ProjectLayout from '../components/ProjectLayout';
-import { projectService, storyService, sprintService } from '../services/api';
+import { projectService, storyService, sprintService, commentService } from '../services/api';
 import { authService } from '../services/authService';
-import type { Project, ProjectMember, UserStory, Sprint } from '../types';
+import type { Project, ProjectMember, UserStory, Sprint, Comment } from '../types';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -28,6 +28,7 @@ const ProjectOverview: React.FC = () => {
     const [members, setMembers] = useState<ProjectMember[]>([]);
     const [stories, setStories] = useState<UserStory[]>([]);
     const [sprints, setSprints] = useState<Sprint[]>([]);
+    const [recentActivity, setRecentActivity] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCollabModalOpen, setIsCollabModalOpen] = useState(false);
 
@@ -37,16 +38,18 @@ const ProjectOverview: React.FC = () => {
     const fetchProjectData = React.useCallback(async () => {
         if (!projectId) return;
         try {
-            const [pRes, mRes, sRes, spRes] = await Promise.all([
+            const [pRes, mRes, sRes, spRes, cRes] = await Promise.all([
                 projectService.getById(projectId),
                 projectService.getMembers(projectId),
                 storyService.getByProject(projectId),
-                sprintService.getByProject(projectId)
+                sprintService.getByProject(projectId),
+                commentService.getByProject(projectId).catch(() => ({ data: [] }))
             ]);
             setProject(pRes.data);
             setMembers(mRes.data);
             setStories(sRes.data);
             setSprints(spRes.data);
+            setRecentActivity(cRes.data.slice(0, 5));
         } catch (err: unknown) {
             console.error('Error fetching project overview data:', err);
             let errorMsg = 'Error al cargar la vista general del proyecto';
@@ -142,22 +145,20 @@ const ProjectOverview: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Recent Activity List */}
+                        {/* Inspirational Quote Section */}
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-[0.2em] px-2 italic">Actividad Reciente</h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                {[1, 2].map(i => (
-                                    <div key={i} className="bg-white border border-[#E9ECEF] p-5 rounded-[24px] flex items-center gap-5 hover:border-[#10B981]/30 transition-all cursor-pointer group shadow-sm">
-                                        <div className="w-12 h-12 bg-[#F8F9FA] rounded-2xl flex items-center justify-center text-[#ADB5BD] group-hover:bg-[#F0FDF4] group-hover:text-[#10B981] transition-all">
-                                            <MessageSquare className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-black text-[#1A1A1A] group-hover:text-[#10B981] transition-colors truncate">Actualización en <span className="underline">DU-0{i}</span></p>
-                                            <p className="text-xs text-[#64748B] font-medium leading-tight">Comentario añadido por el equipo de desarrollo.</p>
-                                        </div>
-                                        <span className="text-[10px] font-black text-[#ADB5BD] uppercase shrink-0">2H AGO</span>
-                                    </div>
-                                ))}
+                            <div className="bg-gradient-to-r from-[#10B981]/10 to-[#F0FDF4] border border-[#10B981]/20 p-8 rounded-[24px] flex items-center justify-center text-center shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-5">
+                                    <MessageSquare className="w-24 h-24 text-[#10B981]" />
+                                </div>
+                                <div className="relative z-10 w-full">
+                                    <p className="text-lg lg:text-xl font-extrabold text-[#1A1A1A] leading-relaxed tracking-tight mb-2">
+                                        "Todo lo puedo en Cristo que me fortalece"
+                                    </p>
+                                    <p className="text-xs font-black text-[#10B981] uppercase tracking-[0.2em] italic">
+                                        Filipenses 4:13
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

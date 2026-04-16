@@ -14,29 +14,43 @@ const PublicProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
   const [data, setData] = useState<PublicProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const fetchProfile = React.useCallback(async () => {
+  const fetchProfile = React.useCallback(async (isSilent = false) => {
     try {
       if (!username) return;
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       const response = await userService.getPublicProfile(username);
       setData(response.data);
+      setError(null);
     } catch (err: unknown) {
       console.error('Error fetching public profile:', err);
       let errorMsg = 'No se pudo cargar el perfil público.';
       if (axios.isAxiosError(err)) {
-        errorMsg = err.response?.data?.error || err.response?.data?.detail || errorMsg;
+        if (err.response?.status === 404) {
+          errorMsg = 'El usuario que buscas no existe o ha sido desactivado.';
+        } else {
+          errorMsg = err.response?.data?.error || err.response?.data?.detail || errorMsg;
+        }
       }
-      toast.error(errorMsg);
+      setError(errorMsg);
+      if (!isSilent) toast.error(errorMsg);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, [username]);
 
+  // Polling cada 5 segundos
   useEffect(() => {
     if (username) {
       fetchProfile();
+      
+      const interval = setInterval(() => {
+        fetchProfile(true); // Silent update for polling
+      }, 5000);
+
+      return () => clearInterval(interval);
     }
   }, [username, fetchProfile]);
 
@@ -75,6 +89,26 @@ const PublicProfilePage: React.FC = () => {
                 </button>
           </div>
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#10B981]"></div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex text-[#1A1A1A] font-sans">
+        <Sidebar />
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white p-12 rounded-[40px] shadow-xl border border-[#E9ECEF] max-w-lg">
+            <div className="h-20 w-20 bg-rose-50 rounded-3xl flex items-center justify-center mb-6 mx-auto">
+              <X className="h-10 w-10 text-rose-500" />
+            </div>
+            <h2 className="text-3xl font-extrabold text-[#1A1A1A] mb-4">¡Ups! Algo salió mal</h2>
+            <p className="text-slate-500 font-medium mb-8">{error}</p>
+            <Link to="/search/users" className="inline-block bg-[#10B981] text-white px-8 py-4 rounded-2xl font-bold hover:bg-[#059669] transition-all shadow-lg shadow-[#10B981]/20 active:scale-95">
+              Volver a búsqueda
+            </Link>
+          </div>
         </main>
       </div>
     );
@@ -235,7 +269,8 @@ const PublicProfilePage: React.FC = () => {
                 <div className="h-20 w-20 bg-[#F8F9FA] rounded-[30px] flex items-center justify-center mb-6 shadow-inner">
                   <Layout className="h-10 w-10 opacity-20" />
                 </div>
-                <p className="text-xl font-extrabold uppercase tracking-widest">Este usuario no tiene proyectos públicos aún.</p>
+                <p className="text-xl font-extrabold uppercase tracking-widest">Este usuario aún no tiene proyectos públicos.</p>
+                <p className="text-sm font-medium mt-2 opacity-60 italic">Vuelve más tarde para ver sus novedades.</p>
               </div>
             )}
           </div>

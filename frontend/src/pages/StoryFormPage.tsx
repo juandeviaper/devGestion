@@ -62,6 +62,7 @@ const StoryFormPage: React.FC = () => {
     const [members, setMembers] = useState<ProjectMember[]>([]);
     const [sprints, setSprints] = useState<Sprint[]>([]);
     const [epics, setEpics] = useState<Epic[]>([]);
+    const [initialSprintId, setInitialSprintId] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -99,6 +100,7 @@ const StoryFormPage: React.FC = () => {
                     horas_estimadas: story.horas_estimadas || '',
                     horas_reales: story.horas_reales || ''
                 });
+                setInitialSprintId(story.sprint?.toString() || null);
                 setCriteria(story.criterios ? story.criterios.map((c: AcceptanceCriterion) => ({ 
                     id: c.id,
                     descripcion: c.descripcion, 
@@ -361,7 +363,7 @@ const StoryFormPage: React.FC = () => {
                                         <AlertCircle className="w-4 h-4 text-[#10B981]" /> PRIORIDAD
                                     </label>
                                     <select
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all appearance-none cursor-pointer"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 premium-select transition-all cursor-pointer"
                                         value={formData.prioridad}
                                         onChange={(e) => setFormData({ ...formData, prioridad: e.target.value as Priority })}
                                     >
@@ -377,7 +379,7 @@ const StoryFormPage: React.FC = () => {
                                             <Activity className="w-4 h-4 text-[#10B981]" /> ESTADO
                                         </label>
                                         <select
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all appearance-none cursor-pointer"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 premium-select transition-all cursor-pointer"
                                             value={formData.estado}
                                             onChange={(e) => setFormData({ ...formData, estado: e.target.value as ItemStatus })}
                                         >
@@ -394,7 +396,7 @@ const StoryFormPage: React.FC = () => {
                                         <UserIcon className="w-4 h-4 text-[#10B981]" /> RESPONSABLE
                                     </label>
                                     <select
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all appearance-none cursor-pointer"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 premium-select transition-all cursor-pointer"
                                         value={formData.asignado_a}
                                         onChange={(e) => setFormData({ ...formData, asignado_a: e.target.value })}
                                     >
@@ -411,14 +413,28 @@ const StoryFormPage: React.FC = () => {
                                             <Clock className="w-4 h-4 text-[#10B981]" /> SPRINT / ITERACIÓN
                                         </label>
                                         <select
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all appearance-none cursor-pointer"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 premium-select transition-all cursor-pointer"
                                             value={formData.sprint}
                                             onChange={(e) => setFormData({ ...formData, sprint: e.target.value })}
                                         >
                                             <option value="" className="text-black">Backlog general</option>
-                                            {sprints.map(s => (
-                                                <option key={s.id} value={s.id} className="text-black">{s.nombre}</option>
-                                            ))}
+                                            {sprints.map(s => {
+                                                const strId = s.id.toString();
+                                                const isInProgress = s.estado === 'activo';
+                                                const isFinished = s.estado === 'terminado';
+                                                const isCurrent = strId === initialSprintId;
+                                                
+                                                const isDisabled = (isInProgress || isFinished) && !isCurrent;
+                                                let label = s.nombre;
+                                                if (isInProgress && !isCurrent) label += ' (En curso - No asignable)';
+                                                if (isFinished && !isCurrent) label += ' (Terminado - Cerrado)';
+                                                
+                                                return (
+                                                    <option key={s.id} value={strId} className="text-black" disabled={isDisabled}>
+                                                        {label}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
                                 )}

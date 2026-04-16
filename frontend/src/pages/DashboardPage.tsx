@@ -252,13 +252,23 @@ const DashboardPage: React.FC = () => {
                                         <FolderKanban className="w-12 h-12 text-[#10B981]" />
                                     </div>
                                     <h3 className="text-3xl font-black text-[#1A1A1A] mb-4 uppercase italic tracking-tight">Aún no tienes proyectos</h3>
-                                    <p className="text-[#64748B] max-w-md mb-10 font-medium leading-relaxed">Organiza tus tareas, epicas e historias de usuario en un solo lugar. Empieza creando tu primer proyecto ahora mismo.</p>
-                                    <Link
-                                        to="/project/new"
-                                        className="bg-[#10B981] text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-[#10B981]/40 hover:bg-[#059669] hover:-translate-y-1 transition-all flex items-center gap-3 active:scale-95"
-                                    >
-                                        <Plus className="w-6 h-6" /> Crear Mi Primer Proyecto
-                                    </Link>
+                                    <p className="text-[#64748B] max-w-md mb-10 font-medium leading-relaxed">
+                                        Aún no haces parte de ningún proyecto. Crea uno o acepta una invitación para comenzar.
+                                    </p>
+                                    <div className="flex items-center gap-4">
+                                        <Link
+                                            to="/project/new"
+                                            className="bg-[#10B981] text-white px-8 py-4 lg:px-10 lg:py-5 rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-[#10B981]/40 hover:bg-[#059669] hover:-translate-y-1 transition-all flex items-center gap-3 active:scale-95 text-[10px] lg:text-xs"
+                                        >
+                                            <Plus className="w-5 h-5 lg:w-6 lg:h-6" /> Crear proyecto
+                                        </Link>
+                                        <Link
+                                            to="/invitations"
+                                            className="bg-white text-[#1A1A1A] border border-[#DEE2E6] px-8 py-4 lg:px-10 lg:py-5 rounded-2xl font-black uppercase tracking-widest hover:border-[#10B981] hover:text-[#10B981] hover:-translate-y-1 transition-all flex items-center gap-3 active:scale-95 text-[10px] lg:text-xs"
+                                        >
+                                            <Menu className="w-5 h-5 lg:w-6 lg:h-6" /> Ver invitaciones
+                                        </Link>
+                                    </div>
                                 </div>
                             ) : filteredProjects.length === 0 ? (
                                 <div className="col-span-full py-20 text-center">

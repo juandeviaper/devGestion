@@ -24,6 +24,10 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'username'
 
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para acceder o modificar este perfil de usuario"})
+
     def get_permissions(self):
         # Solo admins pueden crear usuarios directamente
         if self.action == 'create':

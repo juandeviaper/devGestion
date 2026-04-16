@@ -30,7 +30,7 @@ class EpicaViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(proyecto_id=proyecto_id)
 
         return queryset.filter(
-            Q(proyecto__creador=user) | Q(proyecto__miembros__usuario=user)
+            Q(proyecto__creador=user) | Q(proyecto__miembros__usuario=user) | Q(proyecto__visibilidad='publico')
         ).distinct()
 
 
@@ -42,6 +42,15 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
         # Actualizar estado (PATCH): el asignado puede hacerlo.
         IsOwnerOrAdminToCreateUpdate | CanUpdateStatusIfAssigned,
     ]
+
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        if request.authenticators and not request.successful_authenticator:
+            raise exceptions.NotAuthenticated()
+        
+        # Formato solicitado: {"error": "..."}
+        error_message = message or "No tienes permiso para modificar esta historia"
+        raise exceptions.PermissionDenied(detail={"error": error_message})
 
     def get_queryset(self):
         user = self.request.user
@@ -61,9 +70,11 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
 
         if not user.is_staff:
             # Cualquier miembro del proyecto (dueño o colaborador) puede ver todas las historias
+            # Al igual que cualquier usuario si el proyecto es público
             queryset = queryset.filter(
                 Q(proyecto__creador=user)
                 | Q(proyecto__miembros__usuario=user)
+                | Q(proyecto__visibilidad='publico')
             ).distinct()
         return queryset
 
@@ -124,12 +135,20 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
 class CriterioAceptacionViewSet(viewsets.ModelViewSet):
     queryset = CriterioAceptacion.objects.all()
     serializer_class = CriterioAceptacionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminToCreateUpdate]
+
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permiso para modificar este criterio"})
 
 
 class ComentarioViewSet(viewsets.ModelViewSet):
     serializer_class = ComentarioSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminToCreateUpdate]
+
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permiso para gestionar este comentario"})
 
     def get_queryset(self):
         user = self.request.user
@@ -138,8 +157,10 @@ class ComentarioViewSet(viewsets.ModelViewSet):
             .filter(
                 Q(proyecto__creador=user)
                 | Q(proyecto__miembros__usuario=user)
+                | Q(proyecto__visibilidad='publico')
                 | Q(historia__proyecto__creador=user)
                 | Q(historia__proyecto__miembros__usuario=user)
+                | Q(historia__proyecto__visibilidad='publico')
             )
             .distinct()
         )
@@ -150,14 +171,20 @@ class ComentarioViewSet(viewsets.ModelViewSet):
 
 class AdjuntoViewSet(viewsets.ModelViewSet):
     serializer_class = AdjuntoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminToCreateUpdate]
+
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permiso para gestionar este adjunto"})
 
     def get_queryset(self):
         user = self.request.user
         return (
             Adjunto.objects.select_related('subido_por', 'historia')
             .filter(
-                Q(historia__proyecto__creador=user) | Q(historia__proyecto__miembros__usuario=user)
+                Q(historia__proyecto__creador=user) 
+                | Q(historia__proyecto__miembros__usuario=user)
+                | Q(historia__proyecto__visibilidad='publico')
             )
             .distinct()
         )

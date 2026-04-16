@@ -24,6 +24,10 @@ class TareaViewSet(viewsets.ModelViewSet):
         IsOwnerOrAdminToCreateUpdate | CanUpdateStatusIfAssigned,
     ]
 
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para gestionar esta tarea"})
+
     def get_queryset(self):
         user = self.request.user
         queryset = Tarea.objects.select_related(
@@ -40,7 +44,10 @@ class TareaViewSet(viewsets.ModelViewSet):
 
         if not user.is_staff:
             queryset = queryset.filter(
-                Q(proyecto__creador=user) | Q(proyecto__miembros__usuario=user) | Q(asignado_a=user)
+                Q(proyecto__creador=user) 
+                | Q(proyecto__miembros__usuario=user) 
+                | Q(asignado_a=user)
+                | Q(proyecto__visibilidad='publico')
             ).distinct()
 
         return queryset

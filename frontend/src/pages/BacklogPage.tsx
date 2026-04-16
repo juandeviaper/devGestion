@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ProjectLayout from '../components/ProjectLayout';
-import { storyService } from '../services/api';
+import { storyService, projectService } from '../services/api';
+import { authService } from '../services/authService';
 import {
     Layers,
     Plus,
@@ -20,20 +21,32 @@ const BacklogPage: React.FC = () => {
     const [stories, setStories] = useState<UserStory[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [project, setProject] = useState<any>(null);
+    const [isMember, setIsMember] = useState(false);
+    const user = authService.getUser();
 
     const fetchStories = React.useCallback(async () => {
         if (!projectId) return;
         try {
             setLoading(true);
-            const res = await storyService.getByProject(projectId);
-            setStories(res.data);
+            const [sRes, pRes, mRes] = await Promise.all([
+                storyService.getByProject(projectId),
+                projectService.getById(projectId),
+                projectService.getMembers(projectId)
+            ]);
+            setStories(sRes.data);
+            setProject(pRes.data);
+            
+            const member = mRes.data.find((m: any) => m.usuario === user?.id);
+            setIsMember(!!member || pRes.data.creador.id === user?.id || user?.is_staff);
+
         } catch (err: unknown) {
             console.error(err);
             toast.error('Error al cargar historias');
         } finally {
             setLoading(false);
         }
-    }, [projectId]);
+    }, [projectId, user?.id, user?.is_staff]);
 
     useEffect(() => {
         fetchStories();
@@ -86,12 +99,14 @@ const BacklogPage: React.FC = () => {
                         </h1>
                         <p className="text-[10px] lg:text-xs text-[#64748B] font-black italic tracking-widest uppercase opacity-70">Priorización y refinamiento de requisitos</p>
                     </div>
-                    <Link
-                        to={`/project/${projectId}/story/new`}
-                        className="w-full sm:w-auto px-8 py-3 bg-[#10B981] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#059669] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#10B981]/20"
-                    >
-                        <Plus className="w-4 h-4" /> Crear Historia
-                    </Link>
+                    {isMember && (
+                        <Link
+                            to={`/project/${projectId}/story/new`}
+                            className="w-full sm:w-auto px-8 py-3 bg-[#10B981] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#059669] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#10B981]/20"
+                        >
+                            <Plus className="w-4 h-4" /> Crear Historia
+                        </Link>
+                    )}
                 </div>
 
                 <div className="bg-white border border-[#E9ECEF] rounded-[32px] overflow-hidden shadow-sm flex flex-col flex-1 min-h-[500px]">
@@ -155,14 +170,16 @@ const BacklogPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1.5 lg:gap-2">
-                                            <Link to={`/project/${projectId}/story/${item.id}/edit`} className="p-3 text-[#ADB5BD] hover:text-[#10B981] hover:bg-white rounded-xl transition-all border border-transparent hover:border-[#10B981]/20 shadow-none hover:shadow-sm">
-                                                <Edit3 className="w-5 h-5 lg:w-6 lg:h-6" />
-                                            </Link>
-                                            <button onClick={() => handleDelete(item.id!)} className="p-3 text-[#ADB5BD] hover:text-red-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-red-500/20 shadow-none hover:shadow-sm">
-                                                <Trash2 className="w-5 h-5 lg:w-6 lg:h-6" />
-                                            </button>
-                                        </div>
+                                        {isMember && (
+                                            <div className="flex items-center gap-1.5 lg:gap-2">
+                                                <Link to={`/project/${projectId}/story/${item.id}/edit`} className="p-3 text-[#ADB5BD] hover:text-[#10B981] hover:bg-white rounded-xl transition-all border border-transparent hover:border-[#10B981]/20 shadow-none hover:shadow-sm">
+                                                    <Edit3 className="w-5 h-5 lg:w-6 lg:h-6" />
+                                                </Link>
+                                                <button onClick={() => handleDelete(item.id!)} className="p-3 text-[#ADB5BD] hover:text-red-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-red-500/20 shadow-none hover:shadow-sm">
+                                                    <Trash2 className="w-5 h-5 lg:w-6 lg:h-6" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))

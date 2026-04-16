@@ -10,7 +10,8 @@ import {
     XCircle,
     User as UserIcon,
     RefreshCw,
-    X
+    X,
+    Menu
 } from 'lucide-react';
 import { userService } from '../services/api';
 import Sidebar from '../components/Sidebar';

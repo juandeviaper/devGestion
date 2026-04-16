@@ -15,6 +15,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para gestionar estas notificaciones"})
+
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user)
 

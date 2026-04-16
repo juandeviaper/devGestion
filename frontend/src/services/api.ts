@@ -27,11 +27,13 @@ api.interceptors.request.use(
     }
 );
 
-// Add a response interceptor to handle token expiration
+// Add a response interceptor to handle token expiration and global errors
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+        
+        // Handle 401 Unauthorized (Token expired)
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             const refreshToken = authService.getRefreshToken();
@@ -45,7 +47,6 @@ api.interceptors.response.use(
                     }
                     return api(originalRequest);
                 } catch (refreshError) {
-                    // El refresh falló — sesión expirada
                     authService.clearSession();
                     if (!window.location.pathname.includes('/login')) {
                         import('react-hot-toast').then(({ toast }) => {
@@ -56,13 +57,40 @@ api.interceptors.response.use(
                     return Promise.reject(refreshError);
                 }
             } else {
-                // No hay refresh token — limpiar sesión
                 authService.clearSession();
                 if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }
             }
         }
+
+        // Handle 403 Forbidden and 404 Not Found
+        if (error.response) {
+            const { status, data } = error.response;
+            const message = data.error || data.detail;
+
+            if (status === 403) {
+                console.warn(`[Permisos] Intento de acceso denegado (403):`, {
+                    url: originalRequest.url,
+                    method: originalRequest.method,
+                    user: authService.getUser()?.username,
+                    projectId: originalRequest.url?.split('/').find((segment: string, i: number, arr: string[]) => arr[i-1] === 'proyectos' || arr[i-1] === 'project'),
+                    data: originalRequest.data
+                });
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error(message || 'No tienes permisos para acceder a este recurso.');
+                });
+            } else if (status === 404) {
+                console.error(`[Recurso No Encontrado] 404 en ${originalRequest.url}`, {
+                    user: authService.getUser()?.username,
+                    projectId: originalRequest.url?.split('/').find((segment: string, i: number, arr: string[]) => arr[i-1] === 'proyectos' || arr[i-1] === 'project')
+                });
+                import('react-hot-toast').then(({ toast }) => {
+                    toast.error(message || 'El recurso solicitado no existe o no está disponible.');
+                });
+            }
+        }
+
         return Promise.reject(error);
     }
 );
@@ -207,6 +235,7 @@ export const invitationService = {
         api.post<Invitation>('/invitaciones/', data),
     aceptar: (id: number): Promise<AxiosResponse<unknown>> => api.post(`/invitaciones/${id}/aceptar/`),
     rechazar: (id: number): Promise<AxiosResponse<unknown>> => api.post(`/invitaciones/${id}/rechazar/`),
+    delete: (id: number): Promise<AxiosResponse<void>> => api.delete(`/invitaciones/${id}/`),
 };
 
 export const notificationService = {

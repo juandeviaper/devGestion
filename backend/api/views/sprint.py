@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ..models import Sprint
-from ..permissions import IsProjectMember, IsProjectOwner
+from ..permissions import IsProjectMember, IsProjectOwner, IsOwnerOrPublicReadOnly
 from ..serializers import SprintSerializer
 
 
@@ -16,25 +16,34 @@ class SprintViewSet(viewsets.ModelViewSet):
     serializer_class = SprintSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para gestionar sprints en este proyecto"})
+
     def get_permissions(self):
         """
-        Todos los miembros del proyecto pueden gestionar sprints (CRUD + iniciar/finalizar).
-        El queryset ya filtra que solo ven sprints de sus proyectos.
+        Los sprints públicos se pueden listar y visualizar.
+        Las acciones de modificación quedan para los miembros.
         """
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated(), IsOwnerOrPublicReadOnly()]
         return [permissions.IsAuthenticated(), IsProjectMember()]
 
     def get_queryset(self):
         proyecto_id = self.request.query_params.get('proyecto')
         user = self.request.user
+        
+        base_query = Sprint.objects.all()
         if proyecto_id:
-            return (
-                Sprint.objects.filter(proyecto_id=proyecto_id)
-                .filter(Q(proyecto__creador=user) | Q(proyecto__miembros__usuario=user))
-                .distinct()
-            )
-
-        return Sprint.objects.filter(
-            Q(proyecto__creador=user) | Q(proyecto__miembros__usuario=user)
+            base_query = base_query.filter(proyecto_id=proyecto_id)
+            
+        if user.is_staff:
+            return base_query.distinct()
+            
+        return base_query.filter(
+            Q(proyecto__creador=user) | 
+            Q(proyecto__miembros__usuario=user) | 
+            Q(proyecto__visibilidad='publico')
         ).distinct()
 
     def perform_destroy(self, instance):

@@ -2,6 +2,7 @@ import json
 import os
 
 from django.apps import apps
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -35,15 +36,7 @@ class Command(BaseCommand):
             return
 
         # 2. Configurar ruta del JSON
-        home = os.path.expanduser('~')
-        json_path = os.path.join(
-            home,
-            '.gemini',
-            'antigravity',
-            'brain',
-            '3c7c47cc-4b87-4205-93e5-2ddc22852ace',
-            'realistic_data.json',
-        )
+        json_path = os.path.join(settings.BASE_DIR, 'realistic_data.json')
 
         if not os.path.exists(json_path):
             self.stdout.write(self.style.ERROR(f'Archivo JSON no encontrado: {json_path}'))

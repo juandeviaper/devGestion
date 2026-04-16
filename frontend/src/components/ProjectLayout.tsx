@@ -67,6 +67,7 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
         }
     }, [project, user, role]);
 
+    const isMember = role !== null || user?.is_staff;
     const isOwner = role === 'dueño' || user?.is_staff;
 
     const navItems = [
@@ -76,8 +77,10 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
         { icon: <Kanban className="w-4 h-4" />, label: 'Tablero', path: `/project/${projectId}/kanban` },
         { icon: <Clock className="w-4 h-4" />, label: 'Sprints', path: `/project/${projectId}/sprints` },
         { icon: <Calendar className="w-4 h-4" />, label: 'Calendario', path: `/project/${projectId}/calendar` },
-        { icon: <BarChart3 className="w-4 h-4" />, label: 'Reportes', path: `/project/${projectId}/reports` },
-        ...(isOwner ? [{ icon: <Users className="w-4 h-4" />, label: 'Miembros', path: `/project/${projectId}/members` }] : []),
+        ...(isMember ? [
+            { icon: <BarChart3 className="w-4 h-4" />, label: 'Reportes', path: `/project/${projectId}/reports` },
+            { icon: <Users className="w-4 h-4" />, label: 'Miembros', path: `/project/${projectId}/members` }
+        ] : []),
     ];
 
 

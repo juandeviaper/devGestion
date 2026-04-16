@@ -20,16 +20,8 @@ class WorkItemService:
     ) -> HistoriaUsuario:
         """
         Crea una historia de usuario y sus criterios de aceptación asociados.
-        Valida que el sprint no esté activo para permitir nuevas historias.
         """
         sprint_id = data.get('sprint')
-        if sprint_id:
-            sprint = Sprint.objects.get(id=sprint_id)
-            if sprint.estado == 'activo':
-                raise serializers.ValidationError(
-                    "No se pueden agregar historias a un Sprint activo. "
-                    "Planifica la historia para un futuro sprint o espera a que este finalice."
-                )
 
         story = HistoriaUsuario.objects.create(**data)
         if criteria:

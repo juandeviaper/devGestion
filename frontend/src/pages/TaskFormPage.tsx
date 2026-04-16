@@ -185,7 +185,7 @@ const TaskFormPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-[0.2em] italic text-emerald-500">Prioridad</label>
                                     <select
-                                        className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 transition-all"
+                                    className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 premium-select cursor-pointer transition-all"
                                         value={formData.prioridad}
                                         onChange={(e) => setFormData({ ...formData, prioridad: e.target.value as 'baja' | 'media' | 'alta' })}
                                     >
@@ -198,7 +198,7 @@ const TaskFormPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-[0.2em] italic">Estado</label>
                                     <select
-                                        className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 transition-all"
+                                    className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 premium-select cursor-pointer transition-all"
                                         value={formData.estado}
                                         onChange={(e) => setFormData({ ...formData, estado: e.target.value as 'pendiente' | 'en progreso' | 'terminado' })}
                                     >
@@ -233,7 +233,7 @@ const TaskFormPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-[0.2em] italic">Responsable</label>
                                 <select
-                                    className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 transition-all"
+                                    className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 premium-select cursor-pointer transition-all"
                                     value={formData.asignado_a}
                                     onChange={(e) => setFormData({ ...formData, asignado_a: e.target.value })}
                                 >
@@ -249,7 +249,7 @@ const TaskFormPage: React.FC = () => {
                                     <FileText className="w-3.5 h-3.5 text-emerald-500" /> Historia de Usuario Relacionada (Opcional)
                                 </label>
                                 <select
-                                    className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 transition-all"
+                                    className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-2xl py-3 px-5 text-sm font-bold text-[#1A1A1A] outline-none focus:border-emerald-500 premium-select cursor-pointer transition-all"
                                     value={formData.historia}
                                     onChange={(e) => setFormData({ ...formData, historia: e.target.value })}
                                 >

@@ -14,6 +14,7 @@ from ..serializers import (
     ProyectoMiembroSerializer,
     ProyectoSerializer,
 )
+from ..permissions import IsInvitationParticipant, IsProjectMember, IsProjectOwner, IsOwnerOrPublicReadOnly
 from ..services.project_service import ProjectService
 
 
@@ -26,15 +27,26 @@ class ProyectoViewSet(viewsets.ModelViewSet):
     serializer_class = ProyectoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def permission_denied(self, request, message=None, code=None):
+        from rest_framework import exceptions
+        raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para acceder o gestionar este proyecto"})
+
     def get_permissions(self):
         """
         Diferencia permisos:
-        - list, retrieve, stats, user_stats, métricas, miembros: cualquier miembro autenticado.
-        - destroy, add_member, remove_member: solo dueños del proyecto.
-        - create, update, partial_update: solo dueños del proyecto.
+        - list, retrieve: Los proyectos públicos son accesibles como lectura.
+        - stats, members, download_report: Requieren ser miembro o dueño.
+        - destroy, update, create: Requieren ser dueño.
         """
-        if self.action in ['list', 'retrieve', 'stats', 'user_stats', 'metrics', 'members', 'download_report']:
+        if self.action in ['list', 'stats', 'user_stats']:
+            return [permissions.IsAuthenticated()]
+        
+        if self.action in ['retrieve', 'members']:
+            return [permissions.IsAuthenticated(), IsOwnerOrPublicReadOnly()]
+            
+        if self.action in ['metrics', 'download_report']:
             return [permissions.IsAuthenticated(), IsProjectMember()]
+            
         return [permissions.IsAuthenticated(), IsProjectOwner()]
 
     def get_queryset(self):
@@ -44,8 +56,21 @@ class ProyectoViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return queryset.filter(visibilidad='publico')
 
-        # Filtrado: Proyectos propios o donde es miembro
-        # Se elimina el bypass de is_staff y la visibilidad pública para dashboards limpios
+        # Si es una acción de detalle (retrieve, members, etc), permitimos encontrar 
+        # el proyecto si es público o si el usuario tiene relación.
+        if self.action not in ['list', 'stats']:
+            return queryset.filter(
+                Q(creador=user) | Q(miembros__usuario=user) | Q(visibilidad='publico')
+            ).distinct()
+
+        is_discover = self.request.query_params.get('discover', 'false').lower() == 'true'
+
+        if is_discover:
+            return queryset.filter(
+                Q(creador=user) | Q(miembros__usuario=user) | Q(visibilidad='publico')
+            ).distinct()
+
+        # Fuera de "descubrir", en la lista principal el usuario solo ve sus proyectos
         return queryset.filter(
             Q(creador=user) | Q(miembros__usuario=user)
         ).distinct()
