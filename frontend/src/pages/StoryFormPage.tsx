@@ -11,7 +11,8 @@ import {
     Target,
     Clock,
     User as UserIcon,
-    Activity
+    Activity,
+    Sparkles
 } from 'lucide-react';
 import ProjectLayout from '../components/ProjectLayout';
 import { storyService, projectService, sprintService, epicService } from '../services/api';
@@ -35,6 +36,7 @@ interface StoryFormData {
     epica: string;
     sprint: string;
     asignado_a: string;
+    puntos: number | '';
     horas_estimadas: number | '';
     horas_reales: number | '';
 }
@@ -52,6 +54,7 @@ const StoryFormPage: React.FC = () => {
         epica: '',
         sprint: '',
         asignado_a: '',
+        puntos: '',
         horas_estimadas: '',
         horas_reales: ''
     });
@@ -97,6 +100,7 @@ const StoryFormPage: React.FC = () => {
                     epica: story.epica?.toString() || '',
                     sprint: story.sprint?.toString() || '',
                     asignado_a: story.asignado_a?.toString() || '',
+                    puntos: story.puntos || '',
                     horas_estimadas: story.horas_estimadas || '',
                     horas_reales: story.horas_reales || ''
                 });
@@ -155,6 +159,7 @@ const StoryFormPage: React.FC = () => {
                 epica: formData.epica ? parseInt(formData.epica) : null,
                 sprint: formData.sprint ? parseInt(formData.sprint) : null,
                 asignado_a: formData.asignado_a ? parseInt(formData.asignado_a) : null,
+                puntos: formData.puntos === '' ? 0 : Number(formData.puntos),
                 horas_estimadas: formData.horas_estimadas === '' ? 0 : Number(formData.horas_estimadas),
                 horas_reales: formData.horas_reales === '' ? 0 : Number(formData.horas_reales),
                 proyecto: projectId ? parseInt(projectId) : 0 
@@ -302,7 +307,7 @@ const StoryFormPage: React.FC = () => {
                                     className="flex-1 bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl py-2.5 lg:py-3 px-4 lg:px-5 text-sm font-bold outline-none focus:border-[#10B981] transition-all"
                                     value={newCriterion}
                                     onChange={(e) => setNewCriterion(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCriterion())}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCriterion())}
                                 />
                                 <button
                                     type="button"
@@ -459,6 +464,18 @@ const StoryFormPage: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2 italic">
+                                            <Sparkles className="w-4 h-4 text-[#10B981]" /> STORY POINTS
+                                        </label>
+                                        <input
+                                            type="number"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all"
+                                            value={formData.puntos}
+                                            onChange={(e) => setFormData({ ...formData, puntos: e.target.value === '' ? '' : Number(e.target.value) })}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2 italic">
                                             <Clock className="w-4 h-4 text-[#10B981]" /> EST. (HRS)
                                         </label>
                                         <input
@@ -469,18 +486,19 @@ const StoryFormPage: React.FC = () => {
                                             placeholder="0"
                                         />
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2 italic">
-                                            <Activity className="w-4 h-4 text-[#10B981]" /> REAL (HRS)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all"
-                                            value={formData.horas_reales}
-                                            onChange={(e) => setFormData({ ...formData, horas_reales: e.target.value === '' ? '' : Number(e.target.value) })}
-                                            placeholder="0"
-                                        />
-                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2 italic">
+                                        <Activity className="w-4 h-4 text-[#10B981]" /> REAL (HRS)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] transition-all"
+                                        value={formData.horas_reales}
+                                        onChange={(e) => setFormData({ ...formData, horas_reales: e.target.value === '' ? '' : Number(e.target.value) })}
+                                        placeholder="0"
+                                    />
                                 </div>
                             </div>
                         </div>

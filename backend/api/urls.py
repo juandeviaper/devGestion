@@ -7,7 +7,9 @@ from rest_framework_simplejwt.views import (
 
 from .views import (
     AdjuntoViewSet,
+    AnalyticsViewSet,
     BugViewSet,
+    CeremoniaViewSet,
     CheckEmailView,
     CheckUsernameView,
     ComentarioViewSet,
@@ -64,6 +66,10 @@ router.register(
 # Tareas y Bugs
 router.register(r'tareas', TareaViewSet, basename='tarea')  # Cambiado de tasks a tareas
 router.register(r'bugs', BugViewSet, basename='bug')
+
+# Analítica y Ceremonias
+router.register(r'analytics', AnalyticsViewSet, basename='analytics')
+router.register(r'ceremonias', CeremoniaViewSet, basename='ceremonia')
 
 urlpatterns = [
     # Endpoints de ViewSets

@@ -12,7 +12,7 @@ import {
     X, 
     ChevronLeft,
     Loader2,
-    Palette
+    Activity
 } from 'lucide-react';
 
 interface SprintFormData {
@@ -22,6 +22,7 @@ interface SprintFormData {
     fecha_fin: string;
     estado: 'planeado' | 'activo' | 'terminado';
     proyecto: number;
+    capacidad: number | '';
     color: string;
 }
 
@@ -37,6 +38,7 @@ const SprintFormPage: React.FC = () => {
         fecha_fin: '',
         estado: 'planeado',
         proyecto: projectId ? parseInt(projectId) : 0,
+        capacidad: '',
         color: '#10B981'
     });
 
@@ -56,6 +58,7 @@ const SprintFormPage: React.FC = () => {
                         fecha_fin: data.fecha_fin,
                         estado: data.estado as 'planeado' | 'activo' | 'terminado',
                         proyecto: data.proyecto,
+                        capacidad: data.capacidad || '',
                         color: data.color || '#10B981'
                     });
                 })
@@ -85,11 +88,22 @@ const SprintFormPage: React.FC = () => {
         }
 
         try {
+            const finalData = {
+                ...formData,
+                capacidad: formData.capacidad === '' ? 0 : Number(formData.capacidad)
+            };
+
             if (isEditing && sprintId) {
-                await sprintService.update(sprintId, formData);
+                await sprintService.update(sprintId, finalData);
                 toast.success('Sprint actualizado con éxito');
             } else {
-                await sprintService.create(formData);
+                const queryParams = new URLSearchParams(window.location.search);
+                const storiesIds = queryParams.get('stories')?.split(',').map(id => parseInt(id)) || [];
+                
+                await sprintService.create({
+                    ...finalData,
+                    historias_ids: storiesIds
+                });
                 toast.success('Sprint creado con éxito');
             }
             navigate(`/project/${projectId}/sprints`);
@@ -124,13 +138,13 @@ const SprintFormPage: React.FC = () => {
                             onClick={() => navigate(`/project/${projectId}/sprints`)}
                             className="flex items-center gap-2 text-[#64748B] hover:text-[#10B981] text-[10px] font-black uppercase tracking-widest transition-all mb-4 group"
                         >
-                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Volver a Sprints
+                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Volver
                         </button>
                         <h1 className="text-3xl lg:text-4xl font-black text-[#1A1A1A] tracking-tighter flex items-center gap-3">
                             {isEditing ? 'Editar Sprint' : 'Nuevo Sprint'} <Flag className="w-8 h-8 text-[#10B981]" />
                         </h1>
                         <p className="text-[10px] lg:text-xs text-[#64748B] font-black italic uppercase tracking-[0.2em] opacity-70 mt-2">
-                            {isEditing ? 'Ajusta la planificación de tu ciclo' : 'Define los objetivos de la próxima iteración'}
+                            Planificación de ciclo de trabajo
                         </p>
                     </div>
                 </div>
@@ -141,12 +155,12 @@ const SprintFormPage: React.FC = () => {
                         <div className="space-y-4">
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
                                 <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#10B981] flex items-center justify-center text-[10px]">01</span>
-                                Título de la Iteración
+                                Título
                             </label>
                             <input 
                                 required
                                 type="text" 
-                                placeholder="Ej: Sprint 1 - Core Backend Development"
+                                placeholder="Ej: Sprint 1"
                                 className="w-full px-8 py-5 bg-[#F8F9FA] border border-transparent rounded-[24px] focus:bg-white focus:border-[#10B981]/30 focus:ring-4 focus:ring-[#10B981]/5 transition-all outline-none text-lg font-black tracking-tight placeholder:opacity-30"
                                 value={formData.nombre}
                                 onChange={(e) => setFormData({...formData, nombre: e.target.value})}
@@ -157,12 +171,12 @@ const SprintFormPage: React.FC = () => {
                         <div className="space-y-4">
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
                                 <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#10B981] flex items-center justify-center text-[10px]">02</span>
-                                <Target className="w-4 h-4" /> Objetivo Estratégico
+                                <Target className="w-4 h-4" /> Objetivo
                             </label>
                             <textarea 
                                 required
                                 rows={4}
-                                placeholder="Describe qué quieres lograr en este periodo de tiempo..."
+                                placeholder="Qué quieres lograr..."
                                 className="w-full px-8 py-5 bg-[#F8F9FA] border border-transparent rounded-[24px] focus:bg-white focus:border-[#10B981]/30 transition-all outline-none font-medium leading-relaxed resize-none"
                                 value={formData.objetivo}
                                 onChange={(e) => setFormData({...formData, objetivo: e.target.value})}
@@ -173,7 +187,7 @@ const SprintFormPage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
-                                    <Calendar className="w-4 h-4" /> Fecha de Inicio
+                                    <Calendar className="w-4 h-4" /> Inicio
                                 </label>
                                 <input 
                                     required
@@ -185,7 +199,7 @@ const SprintFormPage: React.FC = () => {
                             </div>
                             <div className="space-y-4">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
-                                    <Calendar className="w-4 h-4 text-red-500" /> Fecha de Finalización
+                                    <Calendar className="w-4 h-4 text-red-500" /> Fin
                                 </label>
                                 <input 
                                     required
@@ -196,22 +210,36 @@ const SprintFormPage: React.FC = () => {
                                 />
                             </div>
                         </div>
+                        {/* Capacidad */}
+                        <div className="space-y-4">
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
+                                <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#10B981] flex items-center justify-center text-[10px]">04</span>
+                                <Activity className="w-4 h-4" /> Capacidad Total (Story Points)
+                            </label>
+                            <input 
+                                required
+                                type="number" 
+                                min="0"
+                                placeholder="Ej: 40"
+                                className="w-full px-8 py-5 bg-[#F8F9FA] border border-transparent rounded-[24px] focus:bg-white focus:border-[#10B981]/30 focus:ring-4 focus:ring-[#10B981]/5 transition-all outline-none text-lg font-black tracking-tight"
+                                value={formData.capacidad}
+                                onChange={(e) => setFormData({...formData, capacidad: e.target.value === '' ? '' : Number(e.target.value)})}
+                            />
+                        </div>
 
                         {/* Estado */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                             <div className="space-y-4">
-                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
-                                    Estado Actual
-                                </label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">Estado</label>
                                 <div className="flex flex-wrap gap-4">
                                     {['planeado', 'activo', 'terminado'].map((status) => (
                                         <button
                                             key={status}
                                             type="button"
-                                            onClick={() => setFormData({...formData, estado: status as 'planeado' | 'activo' | 'terminado'})}
+                                            onClick={() => setFormData({...formData, estado: status as SprintFormData['estado']})}
                                             className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                                                 formData.estado === status 
-                                                    ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] shadow-xl' 
+                                                    ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xl' 
                                                     : 'bg-white text-[#64748B] border-[#E9ECEF] hover:border-[#10B981]'
                                             }`}
                                         >
@@ -222,11 +250,9 @@ const SprintFormPage: React.FC = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
-                                    <Palette className="w-4 h-4" /> Color Distintivo
-                                </label>
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">Color</label>
                                 <div className="flex flex-wrap gap-3">
-                                    {['#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#1A1A1A'].map((c) => (
+                                    {['#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#0F172A'].map((c) => (
                                         <button
                                             key={c}
                                             type="button"
@@ -239,12 +265,6 @@ const SprintFormPage: React.FC = () => {
                                             style={{ backgroundColor: c, borderColor: formData.color === c ? 'white' : 'transparent' }}
                                         />
                                     ))}
-                                    <input 
-                                        type="color" 
-                                        value={formData.color}
-                                        onChange={(e) => setFormData({...formData, color: e.target.value})}
-                                        className="w-10 h-10 rounded-xl bg-transparent cursor-pointer border-none p-0 overflow-hidden"
-                                    />
                                 </div>
                             </div>
                         </div>
@@ -256,19 +276,15 @@ const SprintFormPage: React.FC = () => {
                             onClick={() => navigate(`/project/${projectId}/sprints`)}
                             className="flex items-center gap-2 text-xs font-black text-[#64748B] hover:text-[#1A1A1A] uppercase tracking-widest transition-all"
                         >
-                            <X className="w-4 h-4" /> Cancelar Operación
+                            <X className="w-4 h-4" /> Cancelar
                         </button>
                         <button 
                             type="submit"
                             disabled={loading}
                             className="w-full sm:w-auto px-12 py-5 bg-[#10B981] text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] hover:bg-[#059669] shadow-xl shadow-[#10B981]/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
-                            {loading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <Save className="w-5 h-5" />
-                            )}
-                            {isEditing ? 'Confirmar Cambios' : 'Desplegar Sprint'}
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            {isEditing ? 'Confirmar' : 'Crear Sprint'}
                         </button>
                     </div>
                 </form>

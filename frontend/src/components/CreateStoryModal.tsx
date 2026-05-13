@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     X,
     ChevronRight,
     FileText,
-    AlertCircle
+    AlertCircle,
+    Layout,
+    User,
+    Zap,
+    Target
 } from 'lucide-react';
 import { storyService } from '../services/api';
 import axios from 'axios';
-import type { Priority } from '../types';
+import type { Priority, StorySize } from '../types';
 
 interface CreateStoryModalProps {
     isOpen: boolean;
@@ -19,19 +23,32 @@ interface CreateStoryModalProps {
 const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, projectId, onStoryCreated }) => {
     const [formData, setFormData] = useState<{
         titulo: string;
-        descripcion: string;
+        rol: string;
+        necesidad: string;
+        beneficio: string;
+        puntos: number;
         prioridad: Priority;
     }>({
         titulo: '',
-        descripcion: '',
+        rol: '',
+        necesidad: '',
+        beneficio: '',
+        puntos: 0,
         prioridad: 'media',
     });
+    
+    const [preview, setPreview] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    useEffect(() => {
+        const text = `Yo como ${formData.rol || '[rol]'}, quiero ${formData.necesidad || '[funcionalidad]'}, para ${formData.beneficio || '[beneficio]'}.`;
+        setPreview(text);
+    }, [formData.rol, formData.necesidad, formData.beneficio]);
+
     const handleSubmit = async () => {
-        if (!formData.titulo.trim()) {
-            setError('El título es obligatorio.');
+        if (!formData.titulo.trim() || !formData.rol.trim() || !formData.necesidad.trim() || !formData.beneficio.trim()) {
+            setError('Todos los campos del formato Scrum son obligatorios.');
             return;
         }
 
@@ -40,11 +57,19 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
             setError(null);
             await storyService.create({
                 ...formData,
+                descripcion: preview,
                 proyecto: Number(projectId)
             });
             if (onStoryCreated) onStoryCreated();
             onClose();
-            setFormData({ titulo: '', descripcion: '', prioridad: 'media' });
+            setFormData({ 
+                titulo: '', 
+                rol: '', 
+                necesidad: '', 
+                beneficio: '', 
+                puntos: 0, 
+                prioridad: 'media' 
+            });
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
                 setError(err.response?.data?.detail || 'Error al crear la historia.');
@@ -60,14 +85,14 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0F172A]/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden border border-[#E9ECEF] animate-in zoom-in-95 duration-300">
+            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-[#E9ECEF] animate-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="p-6 bg-[#0F172A] text-white flex justify-between items-center relative">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-white" />
+                        <div className="w-8 h-8 bg-[#10B981] rounded-lg flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-[#0F172A]" />
                         </div>
-                        <h2 className="text-xl font-bold tracking-tight uppercase tracking-widest text-sm">Nueva Historia de Usuario</h2>
+                        <h2 className="text-xl font-bold tracking-tight uppercase tracking-widest">Nueva Historia de Usuario</h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <X className="w-5 h-5" />
@@ -75,41 +100,93 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
                 </div>
 
                 {/* Content */}
-                <div className="p-8 space-y-6">
+                <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                    {/* Título Principal */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest">Título de la Historia</label>
+                        <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest flex items-center gap-2">
+                            <Layout className="w-3 h-3" /> Título de la Historia
+                        </label>
                         <input
                             type="text"
-                            placeholder="Ej. Implementar autenticación JWT"
-                            className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-[#1A1A1A]"
+                            placeholder="Ej. Registro de usuarios con Google"
+                            className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] outline-none transition-all font-bold text-[#1A1A1A]"
                             value={formData.titulo}
                             onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest">Descripción / Criterios</label>
-                        <textarea
-                            rows={4}
-                            placeholder="Como [rol], quiero [acción], para que [beneficio]..."
-                            className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm text-[#64748B]"
-                            value={formData.descripcion}
-                            onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                        ></textarea>
+                    {/* Formato Scrum Grid */}
+                    <div className="grid grid-cols-1 gap-4 bg-[#F8F9FA] p-6 rounded-2xl border border-[#DEE2E6]">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#10B981] uppercase tracking-widest flex items-center gap-2">
+                                <User className="w-3 h-3" /> Yo como... (Rol)
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Ej. Administrador"
+                                className="w-full bg-white border border-[#DEE2E6] rounded-xl py-2 px-4 focus:border-[#10B981] outline-none transition-all text-sm"
+                                value={formData.rol}
+                                onChange={(e) => setFormData({ ...formData, rol: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#10B981] uppercase tracking-widest flex items-center gap-2">
+                                <Zap className="w-3 h-3" /> Quiero... (Necesidad/Funcionalidad)
+                            </label>
+                            <textarea
+                                rows={2}
+                                placeholder="Ej. ver un dashboard de métricas"
+                                className="w-full bg-white border border-[#DEE2E6] rounded-xl py-2 px-4 focus:border-[#10B981] outline-none transition-all text-sm"
+                                value={formData.necesidad}
+                                onChange={(e) => setFormData({ ...formData, necesidad: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#10B981] uppercase tracking-widest flex items-center gap-2">
+                                <Target className="w-3 h-3" /> Para... (Beneficio/Valor)
+                            </label>
+                            <textarea
+                                rows={2}
+                                placeholder="Ej. tomar decisiones informadas sobre el progreso"
+                                className="w-full bg-white border border-[#DEE2E6] rounded-xl py-2 px-4 focus:border-[#10B981] outline-none transition-all text-sm"
+                                value={formData.beneficio}
+                                onChange={(e) => setFormData({ ...formData, beneficio: e.target.value })}
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest">Prioridad</label>
-                        <div className="flex bg-[#F8F9FA] p-1 rounded-xl border border-[#DEE2E6]">
-                            {(['baja', 'media', 'alta'] as Priority[]).map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setFormData({ ...formData, prioridad: p })}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-bold transition-all ${formData.prioridad === p ? 'bg-white shadow-sm text-blue-500' : 'text-[#ADB5BD]'}`}
-                                >
-                                    {p.toUpperCase()}
-                                </button>
-                            ))}
+                    {/* Preview Area */}
+                    <div className="p-4 bg-[#10B981]/10 border border-[#10B981]/20 rounded-xl">
+                        <label className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest block mb-2">Vista Previa Scrum</label>
+                        <p className="text-sm text-[#0F172A] italic">"{preview}"</p>
+                    </div>
+
+                    {/* Selectors Row */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest">Story Points</label>
+                            <input
+                                type="number"
+                                min="0"
+                                className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl py-2 px-4 focus:border-[#10B981] outline-none transition-all text-sm font-bold"
+                                value={formData.puntos}
+                                onChange={(e) => setFormData({ ...formData, puntos: parseInt(e.target.value) || 0 })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest">Prioridad</label>
+                            <div className="flex bg-[#F8F9FA] p-1 rounded-xl border border-[#DEE2E6]">
+                                {(['baja', 'media', 'alta'] as Priority[]).map((p) => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setFormData({ ...formData, prioridad: p })}
+                                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${formData.prioridad === p ? 'bg-white shadow-sm text-[#10B981] border border-[#DEE2E6]' : 'text-[#ADB5BD]'}`}
+                                    >
+                                        {p.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
@@ -126,7 +203,7 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="flex-[2] bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                        className="flex-[2] bg-[#10B981] text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#10B981]/20 hover:bg-[#0da673] transition-all flex items-center justify-center gap-2"
                     >
                         {loading ? 'Creando...' : (
                             <>

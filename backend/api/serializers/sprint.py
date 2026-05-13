@@ -35,5 +35,6 @@ class SprintSerializer(serializers.ModelSerializer):
             'estado',
             'proyecto',
             'proyecto_detalle',
+            'capacidad',
             'color',
         ]

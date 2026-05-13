@@ -12,9 +12,9 @@ import {
     Edit3,
     Trash2,
     Loader2,
-    CheckCircle2,
     Play,
-    StopCircle
+    StopCircle,
+    Sparkles
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -115,12 +115,20 @@ const SprintsPage: React.FC = () => {
                         </h1>
                         <p className="text-[10px] lg:text-xs text-[#64748B] font-black italic uppercase tracking-[0.2em] opacity-70">Planificación táctica del proyecto</p>
                     </div>
-                    <button 
-                        onClick={() => navigate(`/project/${projectId}/sprints/new`)}
-                        className="w-full md:w-auto px-8 py-3 bg-[#10B981] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#059669] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#10B981]/20"
-                    >
-                        <Plus className="w-4 h-4" /> Nuevo Sprint
-                    </button>
+                    <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                        <button 
+                            onClick={() => navigate(`/project/${projectId}/planning`)}
+                            className="flex-1 md:flex-none px-8 py-3 bg-white border border-[#E9ECEF] text-[#0F172A] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#F8F9FA] transition-all flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <Sparkles className="w-4 h-4 text-[#10B981]" /> Planificación
+                        </button>
+                        <button 
+                            onClick={() => navigate(`/project/${projectId}/sprints/new`)}
+                            className="flex-1 md:flex-none px-8 py-3 bg-[#10B981] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#059669] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#10B981]/20"
+                        >
+                            <Plus className="w-4 h-4" /> Nuevo Sprint
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 lg:gap-6">

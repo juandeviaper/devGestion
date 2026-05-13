@@ -1,4 +1,5 @@
 from .bug import Bug as Bug
+from .ceremonia import CeremoniaScrum as CeremoniaScrum
 from .historia import (
     Adjunto as Adjunto,
     Comentario as Comentario,

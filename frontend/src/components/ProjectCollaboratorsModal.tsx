@@ -160,7 +160,7 @@ const ProjectCollaboratorsModal: React.FC<CollaboratorsModalProps> = ({ isOpen, 
                 <div className="px-8 pb-8 space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar">
                     <p className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-[0.2em] mb-4 px-1 italic">Colaboradores Activos</p>
                     {collaborators.map((collab) => (
-                        <div key={collab.usuario_detalle.username} className="flex items-center justify-between p-4 bg-white border border-[#F1F3F5] rounded-[24px] hover:border-[#10B981]/20 transition-all group">
+                        <div key={collab.id} className="flex items-center justify-between p-4 bg-white border border-[#F1F3F5] rounded-[24px] hover:border-[#10B981]/20 transition-all group">
                             <div className="flex items-center gap-3">
                                 <Avatar 
                                     username={collab.usuario_detalle.username} 

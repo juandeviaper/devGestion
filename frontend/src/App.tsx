@@ -31,6 +31,9 @@ import InvitationsPage from './pages/InvitationsPage';
 import SprintFormPage from './pages/SprintFormPage';
 import SprintDetailPage from './pages/SprintDetailPage';
 import ProjectReportPage from './pages/ProjectReportPage';
+import CeremoniesPage from './pages/CeremoniesPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import SprintPlanningPage from './pages/SprintPlanningPage';
 
 
 const App: React.FC = () => {
@@ -196,6 +199,21 @@ const App: React.FC = () => {
         <Route path="/project/:projectId/reports" element={
           <ProtectedRoute>
             <ProjectReportPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/project/:projectId/ceremonies" element={
+          <ProtectedRoute>
+            <CeremoniesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/project/:projectId/analytics" element={
+          <ProtectedRoute>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/project/:projectId/planning" element={
+          <ProtectedRoute>
+            <SprintPlanningPage />
           </ProtectedRoute>
         } />
 

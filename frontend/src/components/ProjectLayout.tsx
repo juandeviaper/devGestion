@@ -14,16 +14,13 @@ import {
     Menu,
     ClipboardCheck,
     Settings,
-    ShieldAlert,
-    BarChart3
+    BarChart3,
+    RefreshCw,
+    TrendingUp,
 } from 'lucide-react';
 import NotificationGroup from './NotificationGroup';
-import ConfirmDeleteModal from './ConfirmDeleteModal';
-import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import type { Project, ProjectMember } from '../types';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
 
 
 interface ProjectLayoutProps {
@@ -35,10 +32,7 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
     const location = useLocation();
     const [project, setProject] = useState<Project | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [role, setRole] = useState<string | null>(null);
-    const navigate = useNavigate();
     const user = authService.getUser();
 
 
@@ -77,6 +71,8 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
         { icon: <Kanban className="w-4 h-4" />, label: 'Tablero', path: `/project/${projectId}/kanban` },
         { icon: <Clock className="w-4 h-4" />, label: 'Sprints', path: `/project/${projectId}/sprints` },
         { icon: <Calendar className="w-4 h-4" />, label: 'Calendario', path: `/project/${projectId}/calendar` },
+        { icon: <RefreshCw className="w-4 h-4" />, label: 'Ceremonias', path: `/project/${projectId}/ceremonies` },
+        { icon: <TrendingUp className="w-4 h-4" />, label: 'Analytics', path: `/project/${projectId}/analytics` },
         ...(isMember ? [
             { icon: <BarChart3 className="w-4 h-4" />, label: 'Reportes', path: `/project/${projectId}/reports` },
             { icon: <Users className="w-4 h-4" />, label: 'Miembros', path: `/project/${projectId}/members` }
@@ -112,9 +108,9 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
                         </button>
 
                         <div className="flex items-center gap-2 text-xs text-[#64748B] font-bold overflow-hidden">
-                            <Link to="/dashboard" className="hidden sm:inline hover:text-[#10B981] cursor-pointer transition-colors shrink-0">DevGestión</Link>
+                            <Link to="/dashboard" className="hidden sm:inline hover:text-[#5e17eb] cursor-pointer transition-colors shrink-0">DevGestión</Link>
                             <ChevronRight className="hidden sm:inline w-3 h-3 shrink-0" />
-                            <div className="w-8 h-8 bg-[#10B981] rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg shadow-[#10B981]/10">
+                            <div className="w-8 h-8 bg-[#0F172A] rounded-lg flex items-center justify-center text-[#10B981] shrink-0 shadow-lg shadow-[#0F172A]/10">
                                 {project?.nombre?.charAt(0).toUpperCase() || 'P'}
                             </div>
                             <span className="text-[#1A1A1A] font-black truncate max-w-[120px] sm:max-w-none">{project?.nombre || 'Cargando...'}</span>
@@ -135,7 +131,7 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
                         {isOwner && (
                             <Link 
                                 to={`/project/${projectId}/settings`}
-                                className="p-2 text-[#64748B] hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all border border-transparent hover:border-blue-100"
+                                className="p-2 text-[#64748B] hover:bg-[#10B981]/5 hover:text-[#10B981] rounded-lg transition-all border border-transparent hover:border-[#10B981]/10"
                                 title="Ajustes del Proyecto"
                             >
                                 <Settings className="w-5 h-5" />
@@ -143,31 +139,6 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ children }) => {
                         )}
                         
                     </div>
-
-                    <ConfirmDeleteModal 
-                        isOpen={showDeleteModal}
-                        onClose={() => setShowDeleteModal(false)}
-                        onConfirm={async () => {
-                            if (!projectId) return;
-                            try {
-                                setLoading(true);
-                                await projectService.delete(projectId);
-                                toast.success("Proyecto eliminado correctamente.");
-                                navigate('/dashboard');
-                            } catch (err: unknown) {
-                                console.error(err);
-                                let errorMsg = "Error al eliminar el proyecto.";
-                                if (axios.isAxiosError(err)) {
-                                    errorMsg = err.response?.data?.error || err.response?.data?.detail || errorMsg;
-                                }
-                                toast.error(errorMsg);
-                            } finally {
-                                setLoading(false);
-                                setShowDeleteModal(false);
-                            }
-                        }}
-                        loading={loading}
-                    />
                 </header>
 
                 {/* Sub-Header Horizontal Navigation (Tabs) */}

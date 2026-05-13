@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ProjectLayout from '../components/ProjectLayout';
-import { projectService, storyService, sprintService, commentService } from '../services/api';
+import { projectService, storyService, sprintService } from '../services/api';
 import { authService } from '../services/authService';
-import type { Project, ProjectMember, UserStory, Sprint, Comment } from '../types';
+import type { Project, ProjectMember, UserStory, Sprint } from '../types';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -16,7 +16,8 @@ import {
     ArrowUpRight,
     MessageSquare,
     Plus,
-    Activity
+    Activity,
+    Github
 } from 'lucide-react';
 import ProjectCollaboratorsModal from '../components/ProjectCollaboratorsModal';
 import Avatar from '../components/Avatar';
@@ -28,7 +29,7 @@ const ProjectOverview: React.FC = () => {
     const [members, setMembers] = useState<ProjectMember[]>([]);
     const [stories, setStories] = useState<UserStory[]>([]);
     const [sprints, setSprints] = useState<Sprint[]>([]);
-    const [recentActivity, setRecentActivity] = useState<Comment[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [isCollabModalOpen, setIsCollabModalOpen] = useState(false);
 
@@ -38,18 +39,16 @@ const ProjectOverview: React.FC = () => {
     const fetchProjectData = React.useCallback(async () => {
         if (!projectId) return;
         try {
-            const [pRes, mRes, sRes, spRes, cRes] = await Promise.all([
+            const [pRes, mRes, sRes, spRes] = await Promise.all([
                 projectService.getById(projectId),
                 projectService.getMembers(projectId),
                 storyService.getByProject(projectId),
-                sprintService.getByProject(projectId),
-                commentService.getByProject(projectId).catch(() => ({ data: [] }))
+                sprintService.getByProject(projectId)
             ]);
             setProject(pRes.data);
             setMembers(mRes.data);
             setStories(sRes.data);
             setSprints(spRes.data);
-            setRecentActivity(cRes.data.slice(0, 5));
         } catch (err: unknown) {
             console.error('Error fetching project overview data:', err);
             let errorMsg = 'Error al cargar la vista general del proyecto';
@@ -88,7 +87,18 @@ const ProjectOverview: React.FC = () => {
                             <Activity className="w-3.5 h-3.5" /> Estado de ejecución actual
                         </div>
                         <h1 className="text-3xl lg:text-5xl font-black text-[#1A1A1A] mb-4 tracking-tighter leading-[1.1]">{project?.nombre}</h1>
-                        <p className="text-sm lg:text-base text-[#64748B] max-w-2xl font-medium leading-relaxed">{project?.descripcion}</p>
+                        <p className="text-sm lg:text-base text-[#64748B] max-w-2xl font-medium leading-relaxed mb-6">{project?.descripcion}</p>
+                        
+                        {project?.repositorio_url && (
+                            <a 
+                                href={project.repositorio_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2.5 px-6 py-2.5 bg-white border border-[#E9ECEF] text-[#0F172A] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#F8F9FA] hover:border-[#10B981]/30 transition-all shadow-sm group w-full sm:w-auto justify-center"
+                            >
+                                <Github className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition-transform" /> Visitar GitHub
+                            </a>
+                        )}
                     </div>
                 </div>
 

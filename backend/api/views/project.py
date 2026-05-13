@@ -204,6 +204,32 @@ class ProyectoViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
+    @action(detail=True, methods=['post'])
+    def salir(self, request, pk=None):
+        proyecto = self.get_object()
+        user = request.user
+        
+        # Verificar si el usuario es miembro
+        if not ProyectoMiembro.objects.filter(proyecto=proyecto, usuario=user).exists() and proyecto.creador != user:
+            return Response({'error': 'No eres miembro de este proyecto'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verificar si es el creador o el único dueño
+        es_creador = proyecto.creador == user
+        es_dueno = ProyectoMiembro.objects.filter(proyecto=proyecto, usuario=user, rol_proyecto='dueño').exists()
+        
+        if es_creador or es_dueno:
+            otros_duenos = ProyectoMiembro.objects.filter(proyecto=proyecto, rol_proyecto='dueño').exclude(usuario=user).count()
+            if otros_duenos == 0:
+                return Response(
+                    {'error': 'Como administrador principal o único dueño, no puedes salir del proyecto sin transferir la propiedad o asignar otro dueño.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Eliminar relación de miembro
+        ProyectoMiembro.objects.filter(proyecto=proyecto, usuario=user).delete()
+        
+        return Response({'status': 'Has salido del proyecto correctamente'})
+
 
 class InvitacionProyectoViewSet(viewsets.ModelViewSet):
     """

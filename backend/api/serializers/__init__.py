@@ -1,4 +1,5 @@
 from .bug import BugSerializer as BugSerializer
+from .ceremonia import CeremoniaSerializer as CeremoniaSerializer
 from .historia import (
     AdjuntoSerializer as AdjuntoSerializer,
     ComentarioSerializer as ComentarioSerializer,

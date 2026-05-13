@@ -4,7 +4,7 @@ import { authService } from './authService';
 import type { 
     Project, User, PublicProfileData, UserStory, Sprint, Epic, Task, Bug, 
     Comment, Attachment, ProjectMember, AcceptanceCriterion,
-    Invitation, Notification, AuthResponse, MyWorkItems
+    Invitation, Notification, AuthResponse, MyWorkItems, Ceremonia
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -98,7 +98,7 @@ api.interceptors.response.use(
 export default api;
 
 export const projectService = {
-    getAll: (): Promise<AxiosResponse<Project[]>> => api.get<Project[]>('/proyectos/'),
+    getAll: (discover: boolean = false): Promise<AxiosResponse<Project[]>> => api.get<Project[]>(`/proyectos/${discover ? '?discover=true' : ''}`),
     getStats: <T = Record<string, number>>(): Promise<AxiosResponse<T>> => api.get<T>('/proyectos/stats/'),
     getUserStats: (username: string): Promise<AxiosResponse<Record<string, number>>> => api.get<Record<string, number>>(`/proyectos/user_stats/?username=${username}`),
     getById: (id: string | number): Promise<AxiosResponse<Project>> => api.get<Project>(`/proyectos/${id}/`),
@@ -107,6 +107,8 @@ export const projectService = {
         api.post(`/proyectos/${projectId}/add_member/`, { username, rol }),
     removeMember: (projectId: string, username: string): Promise<AxiosResponse<unknown>> => 
         api.post(`/proyectos/${projectId}/remove_member/`, { username }),
+    salir: (projectId: string | number): Promise<AxiosResponse<unknown>> => 
+        api.post(`/proyectos/${projectId}/salir/`),
 
     create: (data: Partial<Project>): Promise<AxiosResponse<Project>> => api.post<Project>('/proyectos/', data),
     update: (id: string | number, data: Partial<Project>): Promise<AxiosResponse<Project>> => api.patch<Project>(`/proyectos/${id}/`, data),
@@ -124,12 +126,15 @@ export const projectService = {
 export const storyService = {
     getByProject: (projectId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/?proyecto=${projectId}`),
     getBySprint: (sprintId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/?sprint=${sprintId}`),
+    getBacklog: (projectId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/?proyecto=${projectId}&sprint__isnull=true`),
     getById: (id: string | number): Promise<AxiosResponse<UserStory>> => api.get<UserStory>(`/historias/${id}/`),
     create: (data: Partial<UserStory>): Promise<AxiosResponse<UserStory>> => api.post<UserStory>('/historias/', data),
     update: (id: string | number, data: Partial<UserStory>): Promise<AxiosResponse<UserStory>> => api.patch<UserStory>(`/historias/${id}/`, data),
     delete: (id: string | number): Promise<AxiosResponse<void>> => api.delete(`/historias/${id}/`),
     getAll: (): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>('/historias/'),
     changeStatus: (id: string | number, status: string): Promise<AxiosResponse<UserStory>> => api.patch<UserStory>(`/historias/${id}/change_status/`, { estado: status }),
+    bulkAssign: (sprintId: number | null, historiaIds: number[]): Promise<AxiosResponse<{ message: string; count: number }>> => 
+        api.patch(`/historias/bulk_assign/`, { sprint_id: sprintId, historia_ids: historiaIds }),
     importStories: (projectId: string | number, file: File): Promise<AxiosResponse<any>> => {
         const formData = new FormData();
         formData.append('proyecto', projectId.toString());
@@ -145,7 +150,7 @@ export const sprintService = {
     getAll: (): Promise<AxiosResponse<Sprint[]>> => api.get<Sprint[]>('/sprints/'),
     getByProject: (projectId: string | number): Promise<AxiosResponse<Sprint[]>> => api.get<Sprint[]>(`/sprints/?proyecto=${projectId}`),
     getById: (id: string | number): Promise<AxiosResponse<Sprint>> => api.get<Sprint>(`/sprints/${id}/`),
-    create: (data: Partial<Sprint>): Promise<AxiosResponse<Sprint>> => api.post<Sprint>('/sprints/', data),
+    create: (data: Partial<Sprint> & { historias_ids?: number[] }): Promise<AxiosResponse<Sprint>> => api.post<Sprint>('/sprints/', data),
     update: (id: string | number, data: Partial<Sprint>): Promise<AxiosResponse<Sprint>> => api.patch<Sprint>(`/sprints/${id}/`, data),
     delete: (id: string | number): Promise<AxiosResponse<void>> => api.delete(`/sprints/${id}/`),
     iniciar: (id: string | number): Promise<AxiosResponse<any>> => api.post(`/sprints/${id}/iniciar/`),
@@ -203,7 +208,7 @@ export const userService = {
     // Admin User Management
     adminGetAll: (): Promise<AxiosResponse<User[]>> => api.get<User[]>('/users/'),
     adminCreate: (data: Partial<User>): Promise<AxiosResponse<User>> => api.post<User>('/users/', data),
-    adminUpdate: (id: number, data: Partial<User>): Promise<AxiosResponse<User>> => api.patch<User>(`/users/${id}/`, data),
+    adminUpdate: (id: number, data: Partial<User>): Promise<AxiosResponse<User>> => api.patch<User>(`/users/${id}/`),
     adminDelete: (id: number): Promise<AxiosResponse<void>> => api.delete(`/users/${id}/`),
     getMyWorkItems: (): Promise<AxiosResponse<MyWorkItems>> => api.get<MyWorkItems>('/me/work-items/'),
 };
@@ -242,4 +247,22 @@ export const notificationService = {
     getAll: (): Promise<AxiosResponse<Notification[]>> => api.get<Notification[]>('/notifications/'),
     markAsRead: (id: number): Promise<AxiosResponse<unknown>> => api.post(`/notifications/${id}/mark_as_read/`),
     markAllAsRead: (): Promise<AxiosResponse<unknown>> => api.post('/notifications/mark_all_as_read/'),
+};
+
+export const analyticsService = {
+    getProjectDashboard: (projectId: string | number): Promise<AxiosResponse<any>> => 
+        api.get(`/analytics/${projectId}/project_dashboard/`),
+};
+
+export const ceremoniaService = {
+    getByProject: (projectId: string | number): Promise<AxiosResponse<Ceremonia[]>> => 
+        api.get<Ceremonia[]>(`/ceremonias/?proyecto=${projectId}`),
+    getById: (id: string | number): Promise<AxiosResponse<Ceremonia>> => 
+        api.get<Ceremonia>(`/ceremonias/${id}/`),
+    create: (data: Partial<Ceremonia>): Promise<AxiosResponse<Ceremonia>> => 
+        api.post<Ceremonia>('/ceremonias/', data),
+    update: (id: string | number, data: Partial<Ceremonia>): Promise<AxiosResponse<Ceremonia>> => 
+        api.patch<Ceremonia>(`/ceremonias/${id}/`, data),
+    delete: (id: string | number): Promise<AxiosResponse<void>> => 
+        api.delete(`/ceremonias/${id}/`),
 };

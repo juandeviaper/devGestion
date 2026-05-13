@@ -20,6 +20,7 @@ class Sprint(models.Model):
     fecha_fin = models.DateField()
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='planeado')
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='sprints')
+    capacidad = models.IntegerField(default=0)
     color = models.CharField(max_length=7, default='#10B981')
 
     class Meta:

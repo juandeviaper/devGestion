@@ -121,6 +121,61 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
             
         return Response(result['data'], status=status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['get'])
+    def backlog(self, request):
+        """
+        Retorna las historias del proyecto que NO están asignadas a ningún sprint.
+        """
+        proyecto_id = request.query_params.get('proyecto')
+        if not proyecto_id:
+            return Response({'error': 'Se requiere proyecto_id'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        queryset = self.get_queryset().filter(proyecto_id=proyecto_id, sprint__isnull=True)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['patch'])
+    def bulk_assign(self, request):
+        """
+        Asignación masiva de historias a un sprint.
+        """
+        sprint_id = request.data.get('sprint_id')
+        historia_ids = request.data.get('historia_ids', [])
+
+        if not historia_ids:
+            return Response({'error': 'No se proporcionaron historias para asignar.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Si sprint_id es None, estamos desasignando historias. 
+        # Debemos verificar si las historias pertenecen a un sprint que ya está activo o terminado.
+        if not sprint_id:
+            from ..models import Sprint
+            stories_to_unassign = HistoriaUsuario.objects.filter(id__in=historia_ids, sprint__isnull=False)
+            for story in stories_to_unassign:
+                if story.sprint.estado in ['activo', 'terminado']:
+                    return Response({
+                        'error': f'No se puede desasignar la historia HU-{story.id} porque el sprint "{story.sprint.nombre}" ya está {story.sprint.estado}.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Si sprint_id existe, estamos asignando historias a un sprint específico.
+        else:
+            from ..models import Sprint
+            try:
+                sprint = Sprint.objects.get(id=sprint_id)
+                if sprint.estado in ['activo', 'terminado']:
+                    return Response({
+                        'error': f'No se pueden asignar historias al sprint "{sprint.nombre}" porque ya está {sprint.estado}.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except Sprint.DoesNotExist:
+                return Response({'error': 'El sprint no existe.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Realizar la actualización masiva
+        updated_count = HistoriaUsuario.objects.filter(id__in=historia_ids).update(sprint_id=sprint_id)
+        
+        return Response({
+            'message': f'{updated_count} historias actualizadas correctamente.',
+            'count': updated_count
+        })
+
     @action(detail=True, methods=['patch'])
     def change_status(self, request, pk=None):
         """

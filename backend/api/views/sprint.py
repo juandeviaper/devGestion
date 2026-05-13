@@ -46,6 +46,21 @@ class SprintViewSet(viewsets.ModelViewSet):
             Q(proyecto__visibilidad='publico')
         ).distinct()
 
+    def create(self, request, *args, **kwargs):
+        historias_ids = request.data.get('historias_ids', [])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sprint = serializer.save()
+        
+        if historias_ids:
+            from ..models import HistoriaUsuario
+            # Solo asignar historias que pertenecen al mismo proyecto y no están en otros sprints activos
+            # (Aunque la lógica de "no otros sprints" ya debería venir filtrada del frontend)
+            HistoriaUsuario.objects.filter(id__in=historias_ids, proyecto=sprint.proyecto).update(sprint=sprint)
+            
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_destroy(self, instance):
         if instance.estado == 'activo':
             from rest_framework.exceptions import ValidationError

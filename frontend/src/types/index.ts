@@ -74,6 +74,7 @@ export interface Sprint {
   estado: SprintStatus;
   proyecto: number;
   proyecto_detalle?: Project;
+  capacidad: number;
   color: string;
 }
 
@@ -97,10 +98,17 @@ export interface AcceptanceCriterion {
   historia: number;
 }
 
+export type StorySize = 'XS' | 'S' | 'M' | 'L' | 'XL';
+
 export interface UserStory {
   id: number;
   titulo: string;
   descripcion: string;
+  rol?: string;
+  necesidad?: string;
+  beneficio?: string;
+  // talla: StorySize; // Deshabilitado temporalmente a favor de puntos
+  puntos?: number;
   prioridad: Priority;
   estado: ItemStatus;
   epica?: number | null;
@@ -115,7 +123,22 @@ export interface UserStory {
   adjuntos_count: number;
   horas_estimadas?: number;
   horas_reales?: number;
-  puntos?: number | null;
+}
+
+export interface Ceremonia {
+  id: number;
+  tipo: 'daily' | 'review' | 'planning' | 'retro';
+  tipo_display: string;
+  fecha: string;
+  notas: string;
+  estado: 'programada' | 'en_curso' | 'finalizada';
+  estado_display: string;
+  proyecto: number;
+  sprint?: number | null;
+  reunion_url?: string;
+  participantes: number[];
+  participantes_detalle: User[];
+  fecha_creacion: string;
 }
 
 // Task & Bug Types

@@ -28,12 +28,33 @@ const MembersPage: React.FC = () => {
     const [members, setMembers] = useState<ProjectMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [inviteRole, setInviteRole] = useState<ProjectRole>('colaborador');
     const [isRemoving, setIsRemoving] = useState<number | null>(null);
+    const [isLeaving, setIsLeaving] = useState(false);
     const user = authService.getUser();
+
+    const handleLeaveProject = async () => {
+        if (!projectId) return;
+        setIsLeaving(true);
+        try {
+            await projectService.salir(projectId);
+            toast.success('Has salido del proyecto correctamente');
+            window.location.href = '/dashboard';
+        } catch (error: unknown) {
+            let errorMsg = 'No puedes salir del proyecto';
+            if (axios.isAxiosError(error)) {
+                errorMsg = error.response?.data?.error || errorMsg;
+            }
+            toast.error(errorMsg);
+            setIsLeaveModalOpen(false);
+        } finally {
+            setIsLeaving(false);
+        }
+    };
 
     const fetchMembers = React.useCallback(() => {
         if (projectId) {
@@ -132,15 +153,24 @@ const MembersPage: React.FC = () => {
                         <h1 className="text-3xl lg:text-4xl font-black text-[#1A1A1A] mb-2 tracking-tighter">Equipo <Users className="w-6 lg:w-8 h-6 lg:h-8 text-[#10B981] inline-block ml-2 mb-1" /></h1>
                         <p className="text-[10px] lg:text-xs text-[#64748B] font-black italic tracking-[0.2em] uppercase opacity-70">Control de acceso y gobernanza</p>
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                         <button className="flex-1 sm:flex-none p-3 lg:p-3.5 bg-white border border-[#E9ECEF] text-[#64748B] rounded-2xl hover:text-[#10B981] transition-all shadow-sm">
                             <Filter className="w-5 h-5" />
                         </button>
+                        
+                        {/* Botón Salir del Proyecto */}
+                        <button 
+                            onClick={() => setIsLeaveModalOpen(true)}
+                            className="flex-1 sm:flex-none px-6 py-3.5 bg-white border border-red-100 text-red-500 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2 shadow-sm"
+                        >
+                            <ExternalLink className="w-4 h-4 rotate-180" /> Salir
+                        </button>
+
                         <button 
                             onClick={() => setIsInviteModalOpen(true)}
-                            className="flex-[3] sm:flex-none px-8 py-3.5 bg-[#1A1A1A] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#0F172A] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#1A1A1A]/10"
+                            className="flex-[3] sm:flex-none px-8 py-3.5 bg-[#10B981] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#059669] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#10B981]/10"
                         >
-                            <UserPlus className="w-4 h-4 text-[#10B981]" /> Invitar
+                            <UserPlus className="w-4 h-4" /> Invitar
                         </button>
                     </div>
                 </div>
@@ -334,6 +364,39 @@ const MembersPage: React.FC = () => {
                             >
                                 Cancelar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Modal de Confirmación para Salir */}
+            {isLeaveModalOpen && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto">
+                                <ShieldAlert className="w-10 h-10 text-red-500" />
+                            </div>
+                            <div className="space-y-2">
+                                <h2 className="text-2xl font-black text-gray-900 tracking-tighter">¿Abandonar Proyecto?</h2>
+                                <p className="text-sm text-gray-500 leading-relaxed">
+                                    Esta acción te desvinculará del proyecto. Si eres el único administrador, deberás transferir el liderazgo antes de salir.
+                                </p>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <button 
+                                    onClick={handleLeaveProject}
+                                    disabled={isLeaving}
+                                    className="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-red-600 transition-all shadow-lg shadow-red-100 disabled:opacity-50"
+                                >
+                                    {isLeaving ? 'Procesando...' : 'Confirmar Salida'}
+                                </button>
+                                <button 
+                                    onClick={() => setIsLeaveModalOpen(false)}
+                                    className="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-gray-100 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -45,8 +45,23 @@ class HistoriaUsuario(models.Model):
     ]
     PRIORIDAD_CHOICES = [('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta')]
 
+    TALLA_CHOICES = [
+        ('XS', 'Extra Small'),
+        ('S', 'Small'),
+        ('M', 'Medium'),
+        ('L', 'Large'),
+        ('XL', 'Extra Large'),
+    ]
+
     titulo = models.CharField(max_length=200)
-    descripcion = models.TextField()
+    descripcion = models.TextField(blank=True)
+    
+    # Formato Scrum
+    rol = models.CharField(max_length=100, blank=True)
+    necesidad = models.TextField(blank=True)
+    beneficio = models.TextField(blank=True)
+    
+    talla = models.CharField(max_length=5, choices=TALLA_CHOICES, default='M')
     prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='media')
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='historias')
@@ -59,6 +74,7 @@ class HistoriaUsuario(models.Model):
     asignado_a = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='historias_asignadas'
     )
+    puntos = models.IntegerField(default=0)
     horas_estimadas = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     horas_reales = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     fecha_creacion = models.DateTimeField(auto_now_add=True)

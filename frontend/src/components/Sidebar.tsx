@@ -5,7 +5,6 @@ import {
     ShieldCheck,
     ChevronRight,
     Search,
-    Sparkles,
     UserCircle
 } from 'lucide-react';
 
@@ -20,20 +19,18 @@ import Avatar from './Avatar';
 const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const user = authService.getUser();
+    
     const globalItems = [
         { icon: LayoutDashboard, label: 'Mis Proyectos', path: '/dashboard' },
         { icon: Search, label: 'Descubrir', path: '/search/users' },
         { icon: UserCircle, label: 'Mi Perfil', path: '/profile' },
     ];
 
-    const isAdmin = authService.getUser()?.is_staff || false;
+    const isAdmin = user?.is_staff || false;
     const adminItems = [
         { icon: ShieldCheck, label: 'Gestión Usuarios', path: '/admin/users' },
     ];
-
-
-
-
 
     return (
         <aside className="w-72 bg-white border-r border-[#E9ECEF] flex flex-col h-screen sticky top-0 shrink-0 font-sans z-40">
@@ -115,13 +112,13 @@ const Sidebar: React.FC = () => {
 
                     <div className="flex items-center gap-3 relative z-10">
                         <Avatar 
-                            username={authService.getUser()?.username || 'user'} 
-                            photo={typeof authService.getUser()?.perfil?.foto_perfil === 'string' ? authService.getUser()?.perfil?.foto_perfil : undefined} 
+                            username={user?.username || 'user'} 
+                            photo={typeof user?.perfil?.foto_perfil === 'string' ? user?.perfil?.foto_perfil : undefined} 
                             size="sm" 
                             className="ring-2 ring-white/20"
                         />
                         <div className="flex-1 overflow-hidden">
-                            <p className="text-sm font-black truncate text-[#10B981]">@{authService.getUser()?.username || 'admin'}</p>
+                            <p className="text-sm font-black truncate text-[#10B981]">@{user?.username || 'admin'}</p>
                             <p className="text-[10px] text-slate-400 font-medium italic">Ver Perfil <ChevronRight className="w-2 h-2 inline" /></p>
                         </div>
                     </div>

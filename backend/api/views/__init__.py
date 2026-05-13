@@ -1,4 +1,6 @@
+from .analytics import AnalyticsViewSet as AnalyticsViewSet
 from .bug import BugViewSet as BugViewSet
+from .ceremonia import CeremoniaViewSet as CeremoniaViewSet
 from .historia import (
     AdjuntoViewSet as AdjuntoViewSet,
     ComentarioViewSet as ComentarioViewSet,
