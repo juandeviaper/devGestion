@@ -8,13 +8,13 @@ from django.http import HttpResponse
 from ..services.report_service import ReportService
 
 from ..models import HistoriaUsuario, InvitacionProyecto, Notification, Proyecto, ProyectoMiembro
-from ..permissions import IsInvitationParticipant, IsProjectMember, IsProjectOwner
+from ..permissions import IsInvitationParticipant, IsOwnerOrPublicReadOnly, IsProjectMember, IsProjectOwner
 from ..serializers import (
     InvitacionProyectoSerializer,
     ProyectoMiembroSerializer,
     ProyectoSerializer,
 )
-from ..permissions import IsInvitationParticipant, IsProjectMember, IsProjectOwner, IsOwnerOrPublicReadOnly
+
 from ..services.project_service import ProjectService
 
 

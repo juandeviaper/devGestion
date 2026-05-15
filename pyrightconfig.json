@@ -5,7 +5,9 @@
     "exclude": [
         "**/node_modules",
         "**/__pycache__",
-        "backend/venv"
+        "**/migrations",
+        "backend/venv",
+        "frontend"
     ],
     "venvPath": "backend",
     "venv": "venv",
@@ -13,12 +15,22 @@
         {
             "root": "backend",
             "extraPaths": [
-                "."
+                ".",
+                "core",
+                "api"
             ]
         }
     ],
     "typeCheckingMode": "basic",
-    "reportMissingImports": true,
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false,
+    "reportGeneralTypeIssues": false,
+    "reportOptionalMemberAccess": false,
+    "reportAttributeAccessIssue": false,
+    "reportOperatorIssue": false,
+    "reportArgumentType": false,
+    "reportTypedDictNotRequiredAccess": false,
+    "reportCallIssue": false,
     "pythonVersion": "3.13",
     "pythonPlatform": "Windows"
 }

@@ -11,21 +11,21 @@ class ProjectService:
     """
 
     @staticmethod
-    @transaction.atomic
     def create_project(nombre, creador, descripcion='', visibilidad='privado') -> Proyecto:
         """
         Crea un proyecto y asigna al creador como DUEÑO automáticamente.
         """
-        proyecto = Proyecto.objects.create(
-            creador=creador, nombre=nombre, descripcion=descripcion, visibilidad=visibilidad
-        )
+        with transaction.atomic():
+            proyecto = Proyecto.objects.create(
+                creador=creador, nombre=nombre, descripcion=descripcion, visibilidad=visibilidad
+            )
 
-        # Asignación automática de rol de dueño
-        ProyectoMiembro.objects.get_or_create(
-            proyecto=proyecto, usuario=creador, defaults={'rol_proyecto': 'dueño'}
-        )
+            # Asignación automática de rol de dueño
+            ProyectoMiembro.objects.get_or_create(
+                proyecto=proyecto, usuario=creador, defaults={'rol_proyecto': 'dueño'}
+            )
 
-        return proyecto
+            return proyecto
 
     @staticmethod
     def add_member(proyecto: Proyecto, user: User, role: str = 'colaborador') -> ProyectoMiembro:

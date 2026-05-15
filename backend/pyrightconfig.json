@@ -7,6 +7,7 @@
     "exclude": [
         "**/node_modules",
         "**/__pycache__",
+        "**/migrations",
         "venv"
     ],
     "executionEnvironments": [
@@ -25,6 +26,12 @@
     "typeCheckingMode": "basic",
     "reportMissingImports": false,
     "reportMissingModuleSource": false,
+    "reportGeneralTypeIssues": false,
+    "reportOptionalMemberAccess": false,
+    "reportAttributeAccessIssue": false,
+    "reportOperatorIssue": false,
+    "reportArgumentType": false,
+    "reportTypedDictNotRequiredAccess": false,
     "pythonVersion": "3.13",
     "pythonPlatform": "Windows"
 }

@@ -5,9 +5,8 @@ from rest_framework.response import Response
 
 from ..models import Bug
 from ..permissions import (
-    IsProjectMember,
-    IsOwnerOrAdminToCreateUpdate,
     CanUpdateStatusIfAssigned,
+    IsOwnerOrAdminToCreateUpdate,
 )
 from ..serializers import BugSerializer
 

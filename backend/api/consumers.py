@@ -28,7 +28,7 @@ class WorkItemConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         message = data['message']
-        type = data.get('type', 'update')
+        msg_type = data.get('type', 'update')
 
         # Enviar mensaje al grupo
         await self.channel_layer.group_send(

@@ -1,9 +1,18 @@
 from django.db.models import Q
-from rest_framework import permissions, status, viewsets
+from rest_framework import exceptions, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from ..models import Adjunto, Comentario, CriterioAceptacion, Epica, HistoriaUsuario
+from ..models import (
+    Adjunto,
+    Comentario,
+    CriterioAceptacion,
+    Epica,
+    HistoriaUsuario,
+    Proyecto,
+    ProyectoMiembro,
+    Sprint,
+)
 from ..permissions import (
     CanUpdateStatusIfAssigned,
     IsOwnerOrAdminToCreateUpdate,
@@ -16,6 +25,7 @@ from ..serializers import (
     EpicaSerializer,
     HistoriaUsuarioSerializer,
 )
+from ..services.excel_import_service import ExcelImportService
 
 
 class EpicaViewSet(viewsets.ModelViewSet):
@@ -23,7 +33,6 @@ class EpicaViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsProjectMember]
 
     def permission_denied(self, request, message=None, code=None):
-        from rest_framework import exceptions
         raise exceptions.PermissionDenied(detail={"error": message or "No tienes permisos para gestionar épicas en este proyecto"})
 
     def get_queryset(self):
@@ -48,7 +57,6 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
     ]
 
     def permission_denied(self, request, message=None, code=None):
-        from rest_framework import exceptions
         if request.authenticators and not request.successful_authenticator:
             raise exceptions.NotAuthenticated()
         
@@ -66,11 +74,14 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
 
         proyecto_id = self.request.query_params.get('proyecto')
         sprint_id = self.request.query_params.get('sprint')
+        epica_id = self.request.query_params.get('epica')
 
         if proyecto_id:
             queryset = queryset.filter(proyecto_id=proyecto_id)
         if sprint_id:
             queryset = queryset.filter(sprint_id=sprint_id)
+        if epica_id:
+            queryset = queryset.filter(epica_id=epica_id)
 
         if not user.is_staff:
             # Cualquier miembro del proyecto (dueño o colaborador) puede ver todas las historias
@@ -87,9 +98,6 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
         """
         Endpoint para carga masiva de historias desde Excel.
         """
-        from ..services.excel_import_service import ExcelImportService
-        from ..models import Proyecto
-
         proyecto_id = request.data.get('proyecto')
         file_obj = request.FILES.get('file')
 
@@ -102,13 +110,12 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
         # Validar permisos sobre el proyecto (cualquier miembro puede importar)
         try:
             proyecto = Proyecto.objects.get(id=proyecto_id)
-            if not request.user.is_staff and proyecto.creador != request.user:
-                from ..models import ProyectoMiembro
+            if not request.user.is_staff:
                 if not ProyectoMiembro.objects.filter(
                     proyecto=proyecto, usuario=request.user
-                ).exists():
+                ).exists() and proyecto.creador != request.user:
                     return Response(
-                        {'error': 'No eres miembro de este proyecto.'},
+                        {'error': 'No tienes permisos para importar historias en este proyecto.'},
                         status=status.HTTP_403_FORBIDDEN
                     )
         except Proyecto.DoesNotExist:
@@ -150,22 +157,33 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
         if not historia_ids:
             return Response({'error': 'No se proporcionaron historias para asignar.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validar que todas las historias pertenezcan a proyectos donde el usuario tiene acceso
+        allowed_stories = self.get_queryset().filter(id__in=historia_ids)
+        if allowed_stories.count() != len(set(historia_ids)):
+            return Response({
+                'error': 'No tienes permisos sobre algunas de las historias proporcionadas o algunas no existen.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
         # Si sprint_id es None, estamos desasignando historias. 
-        # Debemos verificar si las historias pertenecen a un sprint que ya está activo o terminado.
         if not sprint_id:
-            from ..models import Sprint
-            stories_to_unassign = HistoriaUsuario.objects.filter(id__in=historia_ids, sprint__isnull=False)
-            for story in stories_to_unassign:
-                if story.sprint.estado in ['activo', 'terminado']:
-                    return Response({
-                        'error': f'No se puede desasignar la historia HU-{story.id} porque el sprint "{story.sprint.nombre}" ya está {story.sprint.estado}.'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+            stories_in_restricted_sprints = allowed_stories.filter(sprint__estado__in=['activo', 'terminado'])
+            if stories_in_restricted_sprints.exists():
+                story = stories_in_restricted_sprints.first()
+                return Response({
+                    'error': f'No se puede desasignar la historia HU-{story.id} porque el sprint "{story.sprint.nombre}" ya está {story.sprint.estado}.'
+                }, status=status.HTTP_400_BAD_REQUEST)
         
         # Si sprint_id existe, estamos asignando historias a un sprint específico.
         else:
-            from ..models import Sprint
             try:
                 sprint = Sprint.objects.get(id=sprint_id)
+                
+                # Validar que el sprint pertenezca al mismo proyecto que las historias
+                if allowed_stories.exclude(proyecto=sprint.proyecto).exists():
+                    return Response({
+                        'error': 'No se pueden asignar historias a un sprint de un proyecto diferente.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
                 if sprint.estado in ['activo', 'terminado']:
                     return Response({
                         'error': f'No se pueden asignar historias al sprint "{sprint.nombre}" porque ya está {sprint.estado}.'
@@ -173,8 +191,8 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
             except Sprint.DoesNotExist:
                 return Response({'error': 'El sprint no existe.'}, status=status.HTTP_404_NOT_FOUND)
         
-        # Realizar la actualización masiva
-        updated_count = HistoriaUsuario.objects.filter(id__in=historia_ids).update(sprint_id=sprint_id)
+        # Realizar la actualización masiva sobre un conjunto de IDs limpio para evitar errores con .distinct()
+        updated_count = HistoriaUsuario.objects.filter(id__in=allowed_stories.values_list('id', flat=True)).update(sprint_id=sprint_id)
         
         return Response({
             'message': f'{updated_count} historias actualizadas correctamente.',
@@ -202,7 +220,6 @@ class CriterioAceptacionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminToCreateUpdate]
 
     def permission_denied(self, request, message=None, code=None):
-        from rest_framework import exceptions
         raise exceptions.PermissionDenied(detail={"error": message or "No tienes permiso para modificar este criterio"})
 
 
@@ -211,7 +228,6 @@ class ComentarioViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminToCreateUpdate]
 
     def permission_denied(self, request, message=None, code=None):
-        from rest_framework import exceptions
         raise exceptions.PermissionDenied(detail={"error": message or "No tienes permiso para gestionar este comentario"})
 
     def get_queryset(self):
@@ -238,7 +254,6 @@ class AdjuntoViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminToCreateUpdate]
 
     def permission_denied(self, request, message=None, code=None):
-        from rest_framework import exceptions
         raise exceptions.PermissionDenied(detail={"error": message or "No tienes permiso para gestionar este adjunto"})
 
     def get_queryset(self):

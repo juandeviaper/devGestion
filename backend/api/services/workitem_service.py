@@ -3,8 +3,7 @@ from typing import Any
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from rest_framework import serializers
-from ..models import Bug, CriterioAceptacion, HistoriaUsuario, Tarea, Sprint
+from ..models import Bug, CriterioAceptacion, HistoriaUsuario, Tarea
 
 
 class WorkItemService:
@@ -14,20 +13,19 @@ class WorkItemService:
     """
 
     @staticmethod
-    @transaction.atomic
     def create_story(
         data: dict[str, Any], criteria: list[dict[str, Any]] | None = None
     ) -> HistoriaUsuario:
         """
         Crea una historia de usuario y sus criterios de aceptación asociados.
+        Usa transaction.atomic para garantizar atomicidad.
         """
-        sprint_id = data.get('sprint')
-
-        story = HistoriaUsuario.objects.create(**data)
-        if criteria:
-            for item in criteria:
-                CriterioAceptacion.objects.create(historia=story, **item)
-        return story
+        with transaction.atomic():
+            story = HistoriaUsuario.objects.create(**data)
+            if criteria:
+                for item in criteria:
+                    CriterioAceptacion.objects.create(historia=story, **item)
+            return story
 
     @staticmethod
     def update_item_status(item_type: str, item_id: int, new_status: str, _user: User) -> Any:

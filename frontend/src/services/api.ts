@@ -74,7 +74,7 @@ api.interceptors.response.use(
                     url: originalRequest.url,
                     method: originalRequest.method,
                     user: authService.getUser()?.username,
-                    projectId: originalRequest.url?.split('/').find((segment: string, i: number, arr: string[]) => arr[i-1] === 'proyectos' || arr[i-1] === 'project'),
+                    projectId: originalRequest.url?.split('/').find((_segment: string, i: number, arr: string[]) => arr[i-1] === 'proyectos' || arr[i-1] === 'project'),
                     data: originalRequest.data
                 });
                 import('react-hot-toast').then(({ toast }) => {
@@ -83,7 +83,7 @@ api.interceptors.response.use(
             } else if (status === 404) {
                 console.error(`[Recurso No Encontrado] 404 en ${originalRequest.url}`, {
                     user: authService.getUser()?.username,
-                    projectId: originalRequest.url?.split('/').find((segment: string, i: number, arr: string[]) => arr[i-1] === 'proyectos' || arr[i-1] === 'project')
+                    projectId: originalRequest.url?.split('/').find((_segment: string, i: number, arr: string[]) => arr[i-1] === 'proyectos' || arr[i-1] === 'project')
                 });
                 import('react-hot-toast').then(({ toast }) => {
                     toast.error(message || 'El recurso solicitado no existe o no está disponible.');
@@ -118,7 +118,7 @@ export const projectService = {
         const currentUserMember = members.find(m => m.usuario_detalle.id === userId);
         return currentUserMember?.rol_proyecto === 'dueño';
     },
-    getMetrics: (projectId: string | number): Promise<AxiosResponse<any>> => api.get<any>(`/proyectos/${projectId}/metrics/`),
+    getMetrics: (projectId: string | number): Promise<AxiosResponse<unknown>> => api.get<unknown>(`/proyectos/${projectId}/metrics/`),
     downloadReport: (projectId: string | number): Promise<AxiosResponse<Blob>> => api.get<Blob>(`/proyectos/${projectId}/download_report/`, { responseType: 'blob' }),
 };
 
@@ -126,7 +126,7 @@ export const projectService = {
 export const storyService = {
     getByProject: (projectId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/?proyecto=${projectId}`),
     getBySprint: (sprintId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/?sprint=${sprintId}`),
-    getBacklog: (projectId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/?proyecto=${projectId}&sprint__isnull=true`),
+    getBacklog: (projectId: string | number): Promise<AxiosResponse<UserStory[]>> => api.get<UserStory[]>(`/historias/backlog/?proyecto=${projectId}`),
     getById: (id: string | number): Promise<AxiosResponse<UserStory>> => api.get<UserStory>(`/historias/${id}/`),
     create: (data: Partial<UserStory>): Promise<AxiosResponse<UserStory>> => api.post<UserStory>('/historias/', data),
     update: (id: string | number, data: Partial<UserStory>): Promise<AxiosResponse<UserStory>> => api.patch<UserStory>(`/historias/${id}/`, data),
@@ -135,7 +135,7 @@ export const storyService = {
     changeStatus: (id: string | number, status: string): Promise<AxiosResponse<UserStory>> => api.patch<UserStory>(`/historias/${id}/change_status/`, { estado: status }),
     bulkAssign: (sprintId: number | null, historiaIds: number[]): Promise<AxiosResponse<{ message: string; count: number }>> => 
         api.patch(`/historias/bulk_assign/`, { sprint_id: sprintId, historia_ids: historiaIds }),
-    importStories: (projectId: string | number, file: File): Promise<AxiosResponse<any>> => {
+    importStories: (projectId: string | number, file: File): Promise<AxiosResponse<unknown>> => {
         const formData = new FormData();
         formData.append('proyecto', projectId.toString());
         formData.append('file', file);
@@ -153,8 +153,8 @@ export const sprintService = {
     create: (data: Partial<Sprint> & { historias_ids?: number[] }): Promise<AxiosResponse<Sprint>> => api.post<Sprint>('/sprints/', data),
     update: (id: string | number, data: Partial<Sprint>): Promise<AxiosResponse<Sprint>> => api.patch<Sprint>(`/sprints/${id}/`, data),
     delete: (id: string | number): Promise<AxiosResponse<void>> => api.delete(`/sprints/${id}/`),
-    iniciar: (id: string | number): Promise<AxiosResponse<any>> => api.post(`/sprints/${id}/iniciar/`),
-    finalizar: (id: string | number): Promise<AxiosResponse<any>> => api.post(`/sprints/${id}/finalizar/`),
+    iniciar: (id: string | number): Promise<AxiosResponse<unknown>> => api.post(`/sprints/${id}/iniciar/`),
+    finalizar: (id: string | number): Promise<AxiosResponse<unknown>> => api.post(`/sprints/${id}/finalizar/`),
 };
 
 export const epicService = {
@@ -208,7 +208,7 @@ export const userService = {
     // Admin User Management
     adminGetAll: (): Promise<AxiosResponse<User[]>> => api.get<User[]>('/users/'),
     adminCreate: (data: Partial<User>): Promise<AxiosResponse<User>> => api.post<User>('/users/', data),
-    adminUpdate: (id: number, data: Partial<User>): Promise<AxiosResponse<User>> => api.patch<User>(`/users/${id}/`),
+    adminUpdate: (id: number, data: Partial<User>): Promise<AxiosResponse<User>> => api.patch<User>(`/users/${id}/`, data),
     adminDelete: (id: number): Promise<AxiosResponse<void>> => api.delete(`/users/${id}/`),
     getMyWorkItems: (): Promise<AxiosResponse<MyWorkItems>> => api.get<MyWorkItems>('/me/work-items/'),
 };
@@ -250,7 +250,7 @@ export const notificationService = {
 };
 
 export const analyticsService = {
-    getProjectDashboard: (projectId: string | number): Promise<AxiosResponse<any>> => 
+    getProjectDashboard: (projectId: string | number): Promise<AxiosResponse<unknown>> => 
         api.get(`/analytics/${projectId}/project_dashboard/`),
 };
 
