@@ -72,7 +72,7 @@ const SprintPlanningPage: React.FC = () => {
                 setSelectedSprintId(firstPlanned ? firstPlanned.id : allSprints[0].id);
                 hasInitialized.current = true;
             }
-        } catch (err) {
+        } catch (err: unknown) {
             toast.error('Error al sincronizar datos de planificación');
         } finally {
             if (showLoading) setLoading(false);
@@ -519,6 +519,8 @@ const StoryPlanningCard: React.FC<StoryPlanningCardProps> = ({
     isFromSprint,
     isDisabled 
 }) => {
+    const isTable = viewMode === 'table';
+
     return (
         <Draggable draggableId={story.id.toString()} index={index} isDragDisabled={isDisabled}>
             {(provided, snapshot) => (
@@ -530,13 +532,13 @@ const StoryPlanningCard: React.FC<StoryPlanningCardProps> = ({
                 >
                     <div 
                         onClick={() => !isDisabled && onSelect()}
-                        className={`bg-white border rounded-2xl p-4 transition-all relative overflow-hidden ${
+                        className={`bg-white border rounded-2xl transition-all relative overflow-hidden ${
                             isDisabled ? 'cursor-default opacity-90 grayscale-[0.3]' : 'cursor-pointer'
                         } ${
                             isSelected 
                                 ? 'border-[#10B981] bg-[#10B981]/5 shadow-md ring-2 ring-[#10B981]/10' 
                                 : 'border-[#E9ECEF] hover:border-[#10B981]/40 hover:shadow-sm'
-                        }`}
+                        } ${isTable ? 'p-2.5' : 'p-4'}`}
                     >
                         {/* Indicador de Prioridad Lateral */}
                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -544,7 +546,7 @@ const StoryPlanningCard: React.FC<StoryPlanningCardProps> = ({
                             story.prioridad === 'media' ? 'bg-amber-400' : 'bg-[#10B981]'
                         }`}></div>
 
-                        <div className="flex items-center gap-3 pl-2">
+                        <div className={`flex items-center gap-3 ${isTable ? 'pl-1' : 'pl-2'}`}>
                             {!isDisabled && (
                                 <input 
                                     type="checkbox" 
@@ -553,36 +555,41 @@ const StoryPlanningCard: React.FC<StoryPlanningCardProps> = ({
                                         e.stopPropagation();
                                         onSelect();
                                     }}
+                                    onClick={(e) => e.stopPropagation()}
                                     className="w-4 h-4 rounded-lg border-[#DEE2E6] text-[#10B981] focus:ring-[#10B981]/20 cursor-pointer shrink-0"
                                 />
                             )}
 
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1.5">
+                                <div className={`flex items-center gap-2 ${isTable ? 'mb-0.5' : 'mb-1.5'}`}>
                                     <span className="text-[8px] font-black text-[#64748B] bg-[#F8F9FA] px-1.5 py-0.5 rounded uppercase tracking-tighter shadow-sm border border-[#E9ECEF]">HU-{story.id}</span>
-                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ${
-                                        story.prioridad === 'alta' ? 'text-red-500 bg-red-50' : 
-                                        story.prioridad === 'media' ? 'text-amber-600 bg-amber-50' : 'text-[#10B981] bg-emerald-50'
-                                    }`}>{story.prioridad}</span>
+                                    {!isTable && (
+                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ${
+                                            story.prioridad === 'alta' ? 'text-red-500 bg-red-50' : 
+                                            story.prioridad === 'media' ? 'text-amber-600 bg-amber-50' : 'text-[#10B981] bg-emerald-50'
+                                        }`}>{story.prioridad}</span>
+                                    )}
                                 </div>
-                                <h4 className={`text-xs font-black truncate pr-8 leading-tight transition-colors ${
+                                <h4 className={`font-black truncate transition-colors leading-tight ${
+                                    isTable ? 'text-[10px]' : 'text-xs pr-8'
+                                } ${
                                     isDisabled ? 'text-slate-500' : 'text-[#0F172A] group-hover:text-[#10B981]'
                                 }`}>{story.titulo}</h4>
                             </div>
 
-                            <div className="flex items-center gap-4 shrink-0 pl-4 border-l border-[#E9ECEF]">
+                            <div className={`flex items-center shrink-0 border-[#E9ECEF] ${isTable ? 'gap-3 pl-3 border-l' : 'gap-4 pl-4 border-l'}`}>
                                 <div className="text-right">
-                                    <p className="text-[8px] text-[#ADB5BD] font-black uppercase tracking-widest leading-none mb-1 italic opacity-60">Puntos</p>
-                                    <p className="text-sm font-black text-[#0F172A] tracking-tighter">{story.puntos || 0}</p>
+                                    <p className="text-[8px] text-[#ADB5BD] font-black uppercase tracking-widest leading-none mb-1 italic opacity-60">Pts</p>
+                                    <p className={`${isTable ? 'text-[11px]' : 'text-sm'} font-black text-[#0F172A] tracking-tighter`}>{story.puntos || 0}</p>
                                 </div>
-                                <div className="w-8 h-8 rounded-full bg-[#F8F9FA] flex items-center justify-center text-[10px] font-black text-[#ADB5BD] border border-[#E9ECEF] transition-all shadow-sm">
+                                <div className={`${isTable ? 'w-6 h-6 text-[8px]' : 'w-8 h-8 text-[10px]'} rounded-full bg-[#F8F9FA] flex items-center justify-center font-black text-[#ADB5BD] border border-[#E9ECEF] transition-all shadow-sm`}>
                                     {story.asignado_a_detalle?.username?.charAt(0).toUpperCase() || '?'}
                                 </div>
                             </div>
                         </div>
 
                         {/* Drag Handle UI (Visual Only) */}
-                        {!isDisabled && (
+                        {!isDisabled && !isTable && (
                             <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-[-4px]">
                                 {isFromSprint ? <MoveHorizontal className="w-4 h-4 text-[#ADB5BD]" /> : <ArrowLeftRight className="w-4 h-4 text-[#ADB5BD]" />}
                             </div>

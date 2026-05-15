@@ -164,7 +164,11 @@ const BacklogPage: React.FC = () => {
                                             <input 
                                                 type="checkbox" 
                                                 checked={selectedStories.includes(item.id)}
-                                                onChange={() => toggleSelection(item.id)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleSelection(item.id);
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
                                                 className="w-5 h-5 rounded-lg border-[#DEE2E6] text-[#10B981] focus:ring-[#10B981]/20 cursor-pointer"
                                             />
                                         </div>
@@ -177,6 +181,9 @@ const BacklogPage: React.FC = () => {
                                                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest ${item.prioridad === 'alta' ? 'bg-red-50 text-red-500' :
                                                     item.prioridad === 'media' ? 'bg-blue-50 text-blue-500' : 'bg-slate-50 text-slate-500'
                                                     }`}>{item.prioridad}</span>
+                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border ${getStatusColors(item.estado)}`}>
+                                                    {item.estado}
+                                                </span>
                                                 <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-[#0F172A] text-[#10B981] uppercase tracking-widest">{item.puntos || 0} pts</span>
                                             </div>
                                             <h3 className="text-sm lg:text-base font-black text-[#1A1A1A] truncate transition-colors leading-tight">{item.titulo}</h3>
@@ -196,7 +203,11 @@ const BacklogPage: React.FC = () => {
 
                                         {isMember && (
                                             <div className="flex items-center gap-1.5 lg:gap-2">
-                                                <Link to={`/project/${projectId}/story/${item.id}/edit`} className="p-3 text-[#ADB5BD] hover:text-[#10B981] hover:bg-white rounded-xl transition-all border border-transparent hover:border-[#10B981]/20 shadow-none hover:shadow-sm">
+                                                <Link 
+                                                    to={`/project/${projectId}/story/${item.id}/edit`} 
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="p-3 text-[#ADB5BD] hover:text-[#10B981] hover:bg-white rounded-xl transition-all border border-transparent hover:border-[#10B981]/20 shadow-none hover:shadow-sm"
+                                                >
                                                     <Edit3 className="w-5 h-5 lg:w-6 lg:h-6" />
                                                 </Link>
                                                 <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-3 text-[#ADB5BD] hover:text-red-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-red-500/20 shadow-none hover:shadow-sm">

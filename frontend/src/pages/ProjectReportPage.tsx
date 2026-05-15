@@ -148,11 +148,11 @@ const ProjectReportPage: React.FC = () => {
                                     <span className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">Listo</span>
                                     <span className="text-xl font-black text-[#10B981]">{stats?.stories_done} HU</span>
                                 </div>
-                                <div className="h-6 w-full bg-[#F8F9FA] rounded-full overflow-hidden border border-[#E9ECEF]">
+                                <div className="h-6 w-full bg-[#F8F9FA] rounded-full overflow-hidden border border-[#E9ECEF] p-[2px]">
                                     <div 
-                                        className="h-full bg-[#10B981] transition-all" 
+                                        className="h-full bg-[#10B981] transition-all duration-1000 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.2)]" 
                                         style={{ 
-                                            width: `${(stats?.stories_done / stats?.stories_total * 100) || 0}%`,
+                                            width: `${(stats && stats.stories_total > 0) ? (stats.stories_done / stats.stories_total * 100) : 0}%`,
                                         }}
                                     ></div>
                                 </div>
@@ -216,20 +216,23 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, sub, color, trend }) => (
-    <div className="bg-white border border-[#E9ECEF] p-8 rounded-[2.5rem] shadow-sm hover:shadow-md transition-all group">
-        <div className="flex items-center justify-between mb-8">
-            <div className={`p-3 rounded-xl`} style={{ backgroundColor: `${color}11`, color }}>
-                {icon}
-            </div>
-            {trend && (
-                <div className={`p-1.5 rounded-lg ${trend === 'up' ? 'text-[#10B981] bg-[#10B981]/5' : 'text-red-500 bg-red-50'}`}>
-                    {trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+    <div className="bg-white border border-[#E9ECEF] p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group cursor-default relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#F8F9FA] rounded-full -mr-16 -mt-16 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="relative z-10">
+            <div className="flex items-center justify-between mb-8">
+                <div className={`p-4 rounded-2xl transition-transform duration-500 group-hover:scale-110 shadow-sm`} style={{ backgroundColor: `${color}11`, color }}>
+                    {icon}
                 </div>
-            )}
+                {trend && (
+                    <div className={`p-1.5 rounded-lg ${trend === 'up' ? 'text-[#10B981] bg-[#10B981]/5' : 'text-red-500 bg-red-50'}`}>
+                        {trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                    </div>
+                )}
+            </div>
+            <p className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-widest mb-1 italic">{label}</p>
+            <h3 className="text-3xl font-black text-[#1A1A1A] mb-2 tracking-tighter group-hover:text-[#10B981] transition-colors">{value}</h3>
+            <p className="text-[9px] font-black text-[#64748B] uppercase tracking-widest italic opacity-60">{sub}</p>
         </div>
-        <p className="text-[10px] font-black text-[#ADB5BD] uppercase tracking-widest mb-1 italic">{label}</p>
-        <h3 className="text-3xl font-black text-[#1A1A1A] mb-2 tracking-tighter">{value}</h3>
-        <p className="text-[9px] font-black text-[#64748B] uppercase tracking-widest italic">{sub}</p>
     </div>
 );
 
