@@ -9,7 +9,6 @@ import {
     TrendingUp, 
     TrendingDown, 
     CheckCircle2, 
-    Clock, 
     Target,
     Zap,
     LayoutGrid
