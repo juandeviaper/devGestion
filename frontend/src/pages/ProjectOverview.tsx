@@ -17,7 +17,8 @@ import {
     MessageSquare,
     Plus,
     Activity,
-    Github
+    Github,
+    ExternalLink
 } from 'lucide-react';
 import ProjectCollaboratorsModal from '../components/ProjectCollaboratorsModal';
 import Avatar from '../components/Avatar';
@@ -89,15 +90,34 @@ const ProjectOverview: React.FC = () => {
                         <h1 className="text-3xl lg:text-5xl font-black text-[#1A1A1A] mb-4 tracking-tighter leading-[1.1]">{project?.nombre}</h1>
                         <p className="text-sm lg:text-base text-[#64748B] max-w-2xl font-medium leading-relaxed mb-6">{project?.descripcion}</p>
                         
-                        {project?.repositorio_url && (
+                        {project?.repositorio_url ? (
                             <a 
                                 href={project.repositorio_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2.5 px-6 py-2.5 bg-white border border-[#E9ECEF] text-[#0F172A] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#F8F9FA] hover:border-[#10B981]/30 transition-all shadow-sm group w-full sm:w-auto justify-center"
                             >
-                                <Github className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition-transform" /> Visitar GitHub
+                                {project.repositorio_url.toLowerCase().includes('github.com') ? (
+                                    <>
+                                        <Github className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition-transform" /> Visitar GitHub
+                                    </>
+                                ) : project.repositorio_url.toLowerCase().includes('gitlab.com') ? (
+                                    <>
+                                        <ExternalLink className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition-transform" /> Visitar GitLab
+                                    </>
+                                ) : (
+                                    <>
+                                        <ExternalLink className="w-4 h-4 text-[#10B981] group-hover:scale-110 transition-transform" /> Abrir Repositorio
+                                    </>
+                                )}
                             </a>
+                        ) : (
+                            <Link 
+                                to={`/project/${projectId}/settings`}
+                                className="inline-flex items-center gap-2.5 px-6 py-2.5 bg-[#F8F9FA] border border-dashed border-[#DEE2E6] text-[#64748B] rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-white hover:border-[#10B981]/50 hover:text-[#10B981] transition-all group w-full sm:w-auto justify-center"
+                            >
+                                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" /> Agregar Repositorio
+                            </Link>
                         )}
                     </div>
                 </div>

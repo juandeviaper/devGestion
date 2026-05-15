@@ -89,6 +89,11 @@ const ProjectFormPage: React.FC = () => {
             return;
         }
 
+        if (formData.repositorio_url.trim() && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/.test(formData.repositorio_url)) {
+            setError('Por favor, ingresa una URL válida para el repositorio.');
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);
