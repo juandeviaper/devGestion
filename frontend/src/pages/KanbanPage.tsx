@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useParams, Link } from 'react-router-dom';
@@ -9,14 +9,15 @@ import {
     Kanban as KanbanIcon,
     FileText,
     ClipboardCheck,
-    Bug as BugIcon
+    Bug as BugIcon,
+    Search
 } from 'lucide-react';
 import ProjectLayout from '../components/ProjectLayout';
-import { storyService, projectService, taskService, bugService } from '../services/api';
+import { storyService, projectService, taskService, bugService, sprintService } from '../services/api';
 import { authService } from '../services/authService';
 import Avatar from '../components/Avatar';
 import toast from 'react-hot-toast';
-import type { User, ProjectMember, UserStory, Task, Bug, Project } from '../types';
+import type { User, ProjectMember, UserStory, Task, Bug, Project, Sprint } from '../types';
 import axios from 'axios';
 
 interface KanbanItem {
@@ -30,6 +31,8 @@ interface KanbanItem {
     comentarios_count: number;
     adjuntos_count: number;
     route: string;
+    sprint?: number | null;
+    talla?: string | null;
 }
 
 interface KanbanTypeConfig {
@@ -83,6 +86,15 @@ const KanbanCard: React.FC<{
                                 item.prioridad === 'media' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 text-slate-500 border border-slate-200'
                                 }`}>
                                 {item.prioridad || 'media'}
+                            </span>
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest ${
+                                item.talla === 'XS' ? 'bg-slate-500 text-white' :
+                                item.talla === 'S' ? 'bg-emerald-500 text-white' :
+                                item.talla === 'M' ? 'bg-blue-500 text-white' :
+                                item.talla === 'L' ? 'bg-orange-500 text-white' :
+                                item.talla === 'XL' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'
+                            }`}>
+                                {item.talla || 'Sin estimar'}
                             </span>
                         </div>
                         {isDragDisabled && !isMyTask && (
@@ -143,8 +155,8 @@ const KanbanColumn: React.FC<{
         <div className="p-7 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${
-                    droppableId === 'pendiente' ? 'bg-red-400' :
-                    droppableId === 'en progreso' ? 'bg-amber-400' : 'bg-emerald-400'
+                    droppableId === 'todo' ? 'bg-red-400' :
+                    droppableId === 'inprogress' ? 'bg-amber-400' : 'bg-emerald-400'
                 }`}></div>
                 <h3 className="text-[11px] font-black text-[#1A1A1A] uppercase tracking-[0.2em]">{title}</h3>
                 <span className="bg-white text-slate-500 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-slate-100 shadow-sm">
@@ -196,19 +208,26 @@ const KanbanPage: React.FC = () => {
     const [items, setItems] = useState<KanbanItem[]>([]);
     const [members, setMembers] = useState<ProjectMember[]>([]);
     const [project, setProject] = useState<Project | null>(null);
+    const [sprints, setSprints] = useState<Sprint[]>([]);
+    const [selectedSprintId, setSelectedSprintId] = useState<number | 'all'>('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterPriority, setFilterPriority] = useState<string>('all');
+    const [filterAssignee, setFilterAssignee] = useState<number | 'all'>('all');
     const [loading, setLoading] = useState(true);
+    const hasInitialized = useRef(false);
     const user = authService.getUser();
 
     const fetchData = React.useCallback(async () => {
         if (!projectId) return;
         try {
             setLoading(true);
-            const [sRes, mRes, tRes, bRes, pRes] = await Promise.all([
+            const [sRes, mRes, tRes, bRes, pRes, sprRes] = await Promise.all([
                 storyService.getByProject(projectId),
                 projectService.getMembers(projectId),
                 taskService.getByProject(projectId),
                 bugService.getByProject(projectId),
-                projectService.getById(projectId)
+                projectService.getById(projectId),
+                sprintService.getByProject(projectId)
             ]);
 
             const allItems: KanbanItem[] = [
@@ -222,7 +241,9 @@ const KanbanPage: React.FC = () => {
                     asignado_a_detalle: i.asignado_a_detalle || null,
                     comentarios_count: i.comentarios_count || 0,
                     adjuntos_count: i.adjuntos_count || 0,
-                    route: `/project/${projectId}/story/${i.id}/edit` 
+                    route: `/project/${projectId}/story/${i.id}/edit`,
+                    sprint: i.sprint || null,
+                    talla: i.talla || null
                 })),
                 ...tRes.data.map((i: Task) => ({ 
                     id: i.id!, 
@@ -234,7 +255,8 @@ const KanbanPage: React.FC = () => {
                     asignado_a_detalle: i.asignado_a_detalle || null,
                     comentarios_count: (i as any).comentarios_count || 0,
                     adjuntos_count: (i as any).adjuntos_count || 0,
-                    route: `/project/${projectId}/tasks/${i.id}/edit` 
+                    route: `/project/${projectId}/tasks/${i.id}/edit`,
+                    sprint: i.sprint || null
                 })),
                 ...bRes.data.map((i: Bug) => ({ 
                     id: i.id!, 
@@ -246,13 +268,23 @@ const KanbanPage: React.FC = () => {
                     asignado_a_detalle: i.asignado_a_detalle || null,
                     comentarios_count: (i as any).comentarios_count || 0,
                     adjuntos_count: (i as any).adjuntos_count || 0,
-                    route: `/project/${projectId}/bugs/${i.id}/edit` 
+                    route: `/project/${projectId}/bugs/${i.id}/edit`,
+                    sprint: i.sprint || null
                 }))
             ];
             
             setItems(allItems);
             setMembers(mRes.data);
             setProject(pRes.data);
+            
+            const fetchedSprints = sprRes.data;
+            setSprints(fetchedSprints);
+            
+            // Default to 'all' for general board view
+            if (!hasInitialized.current) {
+                setSelectedSprintId('all');
+                hasInitialized.current = true;
+            }
         } catch (err: unknown) {
             console.error(err);
             let errorMsg = 'Error al cargar el tablero';
@@ -281,60 +313,147 @@ const KanbanPage: React.FC = () => {
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
         const newStatus = destination.droppableId;
-        const [type, id] = draggableId.split('-');
+        const [type, idStr] = draggableId.split('-');
+        const id = Number(idStr);
+
+        // Map visual columns to internal statuses
+        const internalStatus = 
+            newStatus === 'todo' ? 'pendiente' :
+            newStatus === 'inprogress' ? 'en progreso' : 'terminado';
 
         // Optimistic update
         const updatedItems = items.map(item =>
-            (item.type === type && item.id.toString() === id) ? { ...item, estado: newStatus } : item
+            (item.type === type && item.id === id) 
+                ? { ...item, estado: internalStatus } 
+                : item
         );
         setItems(updatedItems);
 
         try {
-            if (type === 'Historia') await storyService.changeStatus(id, newStatus);
-            else if (type === 'Tarea') await taskService.changeStatus(id, newStatus);
-            else if (type === 'Bug') await bugService.changeStatus(id, newStatus);
-            toast.success("Estado actualizado con éxito");
+            if (type === 'Historia') {
+                await storyService.changeStatus(id, internalStatus);
+            } else if (type === 'Tarea') {
+                await taskService.changeStatus(id, internalStatus);
+            } else if (type === 'Bug') {
+                const bugStatus = internalStatus === 'pendiente' ? 'nuevo' : internalStatus;
+                await bugService.changeStatus(id, bugStatus);
+            }
+            toast.success("Estado actualizado");
         } catch (err: unknown) {
             console.error(err);
-            let errorMsg = "No tienes permiso para mover este item";
-            if (axios.isAxiosError(err)) {
-                errorMsg = err.response?.data?.detail || errorMsg;
-            }
-            toast.error(errorMsg);
+            toast.error("Error al mover el item");
             fetchData();
         }
     };
 
     const columns = [
-        { id: 'pendiente', title: 'Por hacer' },
-        { id: 'en progreso', title: 'En progreso' },
-        { id: 'terminado', title: 'Hecho' },
+        { id: 'todo', title: 'Por hacer', color: 'bg-red-400' },
+        { id: 'inprogress', title: 'En progreso', color: 'bg-amber-400' },
+        { id: 'done', title: 'Hecho', color: 'bg-emerald-400' },
     ];
 
-    const getColumnItems = (statusId: string) => {
+    const getColumnItems = (columnId: string) => {
         return items.filter(item => {
-            if (statusId === 'en progreso') {
-                return item.estado === 'en progreso' || item.estado === 'en pruebas' || item.estado === 'Activo';
+            // Filtros avanzados (Búsqueda, Prioridad, Asignado)
+            if (searchTerm && !item.titulo.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+            if (filterPriority !== 'all' && item.prioridad !== filterPriority) return false;
+            if (filterAssignee !== 'all' && item.asignado_a !== filterAssignee) return false;
+
+            // Filtro de Sprint
+            if (selectedSprintId !== 'all' && item.sprint !== selectedSprintId) return false;
+
+            const estado = item.estado.toLowerCase();
+
+            if (columnId === 'todo') {
+                return ['backlog', 'pendiente', 'ready', 'pending', 'nuevo'].includes(estado);
             }
-            if (statusId === 'pendiente') {
-                return item.estado === 'pendiente' || item.estado === 'Nuevo';
+            if (columnId === 'inprogress') {
+                return ['en progreso', 'en pruebas', 'in progress', 'in review', 'testing', 'activo'].includes(estado);
             }
-            if (statusId === 'terminado') {
-                return item.estado === 'terminado' || item.estado === 'Cerrado';
+            if (columnId === 'done') {
+                return ['terminado', 'done', 'completed', 'closed', 'archived', 'cerrado'].includes(estado);
             }
-            return item.estado === statusId;
+            return false;
         });
     };
 
     return (
         <ProjectLayout>
             <div className="h-full flex flex-col overflow-hidden">
-                <div className="mb-8 lg:mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 px-4 sm:px-0">
-                    <div>
-                        <h2 className="text-2xl lg:text-3xl font-black flex items-center gap-3 tracking-tighter">
-                            Tablero Ágil <KanbanIcon className="w-6 lg:w-8 h-6 lg:h-8 text-[#10B981]" />
-                        </h2>
-                        <p className="text-[10px] lg:text-xs text-[#64748B] font-bold mt-1.5 uppercase tracking-widest italic opacity-70">Arrastra y suelta para actualizar el flujo</p>
+                <div className="mb-8 lg:mb-10 flex flex-col gap-8 px-4 sm:px-0">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        <div>
+                            <h2 className="text-2xl lg:text-3xl font-black flex items-center gap-3 tracking-tighter">
+                                Tablero General <KanbanIcon className="w-6 lg:w-8 h-6 lg:h-8 text-[#10B981]" />
+                            </h2>
+                            <p className="text-[10px] lg:text-xs text-[#64748B] font-black mt-1.5 uppercase tracking-widest italic opacity-70">
+                                Visualización completa del flujo de trabajo del proyecto
+                            </p>
+                        </div>
+
+                        {/* Advanced Filters */}
+                        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-3xl border border-slate-100 shadow-sm">
+                            <div className="relative group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 group-focus-within:text-[#10B981] transition-colors" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Buscar..."
+                                    className="pl-9 pr-4 py-2 bg-slate-50 border-none rounded-2xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-[#10B981]/10 transition-all w-32 lg:w-48"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <select 
+                                className="bg-slate-50 border-none rounded-2xl px-4 py-2 text-[11px] font-bold outline-none cursor-pointer text-slate-500"
+                                value={filterPriority}
+                                onChange={(e) => setFilterPriority(e.target.value)}
+                            >
+                                <option value="all">Prioridad: Todas</option>
+                                <option value="alta">Alta</option>
+                                <option value="media">Media</option>
+                                <option value="baja">Baja</option>
+                            </select>
+                            <select 
+                                className="bg-slate-50 border-none rounded-2xl px-4 py-2 text-[11px] font-bold outline-none cursor-pointer text-slate-500"
+                                value={filterAssignee === 'all' ? 'all' : filterAssignee.toString()}
+                                onChange={(e) => setFilterAssignee(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                            >
+                                <option value="all">Responsable: Todos</option>
+                                {members.map(m => (
+                                    <option key={m.id} value={m.usuario_detalle.id}>{m.usuario_detalle.username}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Sprint Tabs Selector */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar border-b border-slate-100">
+                        <button
+                            onClick={() => setSelectedSprintId('all')}
+                            className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap border-2 ${
+                                selectedSprintId === 'all'
+                                    ? 'bg-[#10B981] text-white border-[#10B981] shadow-lg shadow-[#10B981]/20'
+                                    : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+                            }`}
+                        >
+                            Vista General
+                        </button>
+                        {sprints.map(sprint => (
+                            <button
+                                key={sprint.id}
+                                onClick={() => setSelectedSprintId(sprint.id)}
+                                className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap border-2 ${
+                                    selectedSprintId === sprint.id
+                                        ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-lg shadow-[#0F172A]/20'
+                                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+                                }`}
+                            >
+                                {sprint.nombre}
+                                {sprint.estado === 'activo' && (
+                                    <span className="ml-2 w-1.5 h-1.5 bg-[#10B981] rounded-full inline-block animate-pulse"></span>
+                                )}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -345,17 +464,18 @@ const KanbanPage: React.FC = () => {
                                 Sincronizando tablero...
                             </div>
                         ) : (
-                            columns.map(col => (
-                                <KanbanColumn
-                                    key={col.id}
-                                    title={col.title}
-                                    droppableId={col.id}
-                                    projectId={projectId || ''}
-                                    isOwner={isOwner}
-                                    userId={user?.id}
-                                    items={getColumnItems(col.id)}
-                                />
-                            ))
+                            columns
+                                .map(col => (
+                                    <KanbanColumn
+                                        key={col.id}
+                                        title={col.title}
+                                        droppableId={col.id}
+                                        projectId={projectId || ''}
+                                        isOwner={isOwner}
+                                        userId={user?.id}
+                                        items={getColumnItems(col.id)}
+                                    />
+                                ))
                         )}
                     </div>
                 </DragDropContext>

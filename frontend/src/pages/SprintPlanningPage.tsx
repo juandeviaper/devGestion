@@ -1,29 +1,31 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import ProjectLayout from '../components/ProjectLayout';
-import { storyService, sprintService } from '../services/api';
-import axios from 'axios';
-import type { UserStory, Sprint } from '../types';
-import { 
-    Layers, 
-    Zap, 
-    Search, 
-    Trash2, 
-    AlertCircle,
-    LayoutGrid,
-    List,
-    Sparkles,
-    MousePointer2,
-    Calendar,
-    Target,
-    ChevronRight,
-    ArrowLeftRight,
-    MoveHorizontal,
-    Lock,
-} from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
+import { 
+    AlertCircle,
+    ArrowLeftRight,
+    Calendar,
+    ChevronRight,
+    Layers, 
+    LayoutGrid,
+    List,
+    Lock,
+    MousePointer2,
+    MoveHorizontal,
+    Search, 
+    Sparkles,
+    Target,
+    Trash2, 
+    Zap, 
+} from 'lucide-react';
+
+import ProjectLayout from '../components/ProjectLayout';
+import Avatar from '../components/Avatar';
+import { storyService, sprintService } from '../services/api';
+import { type UserStory, type Sprint } from '../types';
 
 const SprintPlanningPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
@@ -40,6 +42,10 @@ const SprintPlanningPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const hasInitialized = useRef(false);
 
+    const filteredBacklog = useMemo(() => 
+        backlog.filter(s => s.titulo.toLowerCase().includes(searchTerm.toLowerCase())),
+    [backlog, searchTerm]);
+
     const selectedSprint = useMemo(() => 
         sprints.find(s => s.id === selectedSprintId), 
     [sprints, selectedSprintId]);
@@ -49,12 +55,12 @@ const SprintPlanningPage: React.FC = () => {
     [selectedSprint]);
 
     // Regla principal: Backlog = Historias sin sprint asignado
-    const fetchData = React.useCallback(async (showLoading = true) => {
+    const fetchData = useCallback(async (showLoading = true) => {
         if (!projectId) return;
         try {
             if (showLoading) setLoading(true);
             
-            // 1. Obtener backlog (Historias SIN sprint)
+            // 1. Obtener backlog y sprints
             const [bRes, sRes] = await Promise.all([
                 storyService.getBacklog(projectId),
                 sprintService.getByProject(projectId)
@@ -72,7 +78,7 @@ const SprintPlanningPage: React.FC = () => {
                 setSelectedSprintId(firstPlanned ? firstPlanned.id : allSprints[0].id);
                 hasInitialized.current = true;
             }
-        } catch (err: unknown) {
+        } catch (error) {
             toast.error('Error al sincronizar datos de planificación');
         } finally {
             if (showLoading) setLoading(false);
@@ -121,7 +127,7 @@ const SprintPlanningPage: React.FC = () => {
         if (!destination) return;
         if (source.droppableId === destination.droppableId) return;
 
-        const storyId = parseInt(draggableId);
+        const storyId = Number(draggableId);
         const isAddingToSprint = destination.droppableId === 'sprint';
         const targetSprintId = isAddingToSprint ? selectedSprintId : null;
 
@@ -143,9 +149,9 @@ const SprintPlanningPage: React.FC = () => {
 
             await storyService.bulkAssign(targetSprintId, [storyId]);
             toast.success(isAddingToSprint ? 'Asignada al sprint' : 'Devuelta al backlog');
-        } catch (err: unknown) {
+        } catch (err: any) {
             let msg = 'Error al actualizar asignación';
-            if (axios.isAxiosError(err)) {
+            if (isAxiosError(err)) {
                 msg = err.response?.data?.error || err.response?.data?.detail || msg;
             }
             toast.error(msg);
@@ -175,7 +181,7 @@ const SprintPlanningPage: React.FC = () => {
             }
         } catch (err: unknown) {
             let msg = 'Error en la acción masiva';
-            if (axios.isAxiosError(err)) {
+            if (isAxiosError(err)) {
                 msg = err.response?.data?.error || err.response?.data?.detail || msg;
             }
             toast.error(msg);
@@ -222,6 +228,8 @@ const SprintPlanningPage: React.FC = () => {
             toast.error('No hay historias en el backlog que quepan en el espacio restante.');
         }
     };
+
+
 
     if (loading && !backlog.length) return (
         <ProjectLayout>
@@ -307,7 +315,7 @@ const SprintPlanningPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <h2 className="text-sm font-black text-[#0F172A] uppercase tracking-tighter">Backlog Disponible</h2>
-                                        <p className="text-[9px] text-[#ADB5BD] font-black uppercase tracking-widest italic">{backlog.length} historias listas</p>
+                                        <p className="text-[9px] text-[#ADB5BD] font-black uppercase tracking-widest italic">{filteredBacklog.length} historias {searchTerm ? 'filtradas' : 'listas'}</p>
                                     </div>
                                 </div>
                                 <div className="relative group/search">
@@ -329,13 +337,14 @@ const SprintPlanningPage: React.FC = () => {
                                         {...provided.droppableProps}
                                         className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar bg-[#FDFDFD]"
                                     >
-                                        {backlog.filter(s => s.titulo.toLowerCase().includes(searchTerm.toLowerCase())).map((story, index) => (
+                                        {filteredBacklog.map((story, index) => (
                                             <StoryPlanningCard 
                                                 key={story.id} 
                                                 story={story} 
                                                 index={index} 
                                                 isSelected={selectedIds.includes(story.id)}
                                                 onSelect={() => toggleSelect(story.id)}
+                                                onEdit={() => navigate(`/project/${projectId}/story/${story.id}/edit`)}
                                                 viewMode={viewMode}
                                                 isDisabled={isLocked}
                                             />
@@ -364,7 +373,7 @@ const SprintPlanningPage: React.FC = () => {
                                             <select 
                                                 className="bg-transparent border-none text-base font-black text-white outline-none cursor-pointer p-0 m-0 tracking-tight"
                                                 value={selectedSprintId || ''}
-                                                onChange={(e) => setSelectedSprintId(Number(e.target.value))}
+                                                onChange={(e) => setSelectedSprintId(e.target.value ? Number(e.target.value) : null)}
                                             >
                                                 {sprints.map(s => (
                                                     <option key={s.id} value={s.id} className="text-black">{s.nombre} ({s.estado})</option>
@@ -423,6 +432,7 @@ const SprintPlanningPage: React.FC = () => {
                                                         index={index}
                                                         isSelected={selectedIds.includes(story.id)}
                                                         onSelect={() => toggleSelect(story.id)}
+                                                        onEdit={() => navigate(`/project/${projectId}/story/${story.id}/edit`)}
                                                         viewMode={viewMode}
                                                         isFromSprint
                                                         isDisabled={isLocked}
@@ -505,6 +515,7 @@ interface StoryPlanningCardProps {
     index: number;
     isSelected: boolean;
     onSelect: () => void;
+    onEdit?: () => void;
     viewMode: 'card' | 'table';
     isFromSprint?: boolean;
     isDisabled?: boolean;
@@ -515,6 +526,7 @@ const StoryPlanningCard: React.FC<StoryPlanningCardProps> = ({
     index, 
     isSelected, 
     onSelect, 
+    onEdit,
     viewMode,
     isFromSprint,
     isDisabled 
@@ -578,15 +590,43 @@ const StoryPlanningCard: React.FC<StoryPlanningCardProps> = ({
                             </div>
 
                             <div className={`flex items-center shrink-0 border-[#E9ECEF] ${isTable ? 'gap-3 pl-3 border-l' : 'gap-4 pl-4 border-l'}`}>
-                                <div className="text-right">
+                                <div className="text-center">
                                     <p className="text-[8px] text-[#ADB5BD] font-black uppercase tracking-widest leading-none mb-1 italic opacity-60">Pts</p>
                                     <p className={`${isTable ? 'text-[11px]' : 'text-sm'} font-black text-[#0F172A] tracking-tighter`}>{story.puntos || 0}</p>
                                 </div>
-                                <div className={`${isTable ? 'w-6 h-6 text-[8px]' : 'w-8 h-8 text-[10px]'} rounded-full bg-[#F8F9FA] flex items-center justify-center font-black text-[#ADB5BD] border border-[#E9ECEF] transition-all shadow-sm`}>
-                                    {story.asignado_a_detalle?.username?.charAt(0).toUpperCase() || '?'}
+                                <div className="text-center">
+                                    <p className="text-[8px] text-[#ADB5BD] font-black uppercase tracking-widest leading-none mb-1 italic opacity-60">Talla</p>
+                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter ${
+                                        story.talla === 'XS' ? 'bg-slate-500 text-white' :
+                                        story.talla === 'S' ? 'bg-emerald-500 text-white' :
+                                        story.talla === 'M' ? 'bg-blue-500 text-white' :
+                                        story.talla === 'L' ? 'bg-orange-500 text-white' :
+                                        story.talla === 'XL' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'
+                                    }`}>
+                                        {story.talla || '?'}
+                                    </span>
                                 </div>
+                                <Avatar 
+                                    username={story.asignado_a_detalle?.username || '?'} 
+                                    photo={typeof story.asignado_a_detalle?.perfil?.foto_perfil === 'string' ? story.asignado_a_detalle.perfil.foto_perfil : undefined} 
+                                    size="xs" 
+                                    className="ring-1 ring-white shadow-sm flex-shrink-0"
+                                />
                             </div>
                         </div>
+
+                        {/* Botón Editar */}
+                        {!isDisabled && (
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit?.();
+                                }}
+                                className="absolute right-12 top-1/2 -translate-y-1/2 p-2 hover:bg-[#F8F9FA] rounded-xl text-[#ADB5BD] hover:text-[#10B981] transition-all opacity-0 group-hover:opacity-100"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                            </button>
+                        )}
 
                         {/* Drag Handle UI (Visual Only) */}
                         {!isDisabled && !isTable && (

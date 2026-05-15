@@ -107,7 +107,7 @@ const BacklogPage: React.FC = () => {
                     <div className="flex flex-wrap gap-4">
                         {isMember && selectedStories.length > 0 && (
                             <Link
-                                to={`/project/${projectId}/sprint/new?stories=${selectedStories.join(',')}`}
+                                to={`/project/${projectId}/sprints/new?stories=${selectedStories.join(',')}`}
                                 className="px-8 py-3 bg-[#0F172A] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#1a2b4a] transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#0F172A]/20 animate-in slide-in-from-right duration-300"
                             >
                                 <Plus className="w-4 h-4" /> Crear Sprint ({selectedStories.length})
@@ -185,6 +185,15 @@ const BacklogPage: React.FC = () => {
                                                     {item.estado}
                                                 </span>
                                                 <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-[#0F172A] text-[#10B981] uppercase tracking-widest">{item.puntos || 0} pts</span>
+                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest ${
+                                                    item.talla === 'XS' ? 'bg-slate-500 text-white' :
+                                                    item.talla === 'S' ? 'bg-emerald-500 text-white' :
+                                                    item.talla === 'M' ? 'bg-blue-500 text-white' :
+                                                    item.talla === 'L' ? 'bg-orange-500 text-white' :
+                                                    item.talla === 'XL' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'
+                                                }`}>
+                                                    {item.talla || 'Sin estimar'}
+                                                </span>
                                             </div>
                                             <h3 className="text-sm lg:text-base font-black text-[#1A1A1A] truncate transition-colors leading-tight">{item.titulo}</h3>
                                         </div>

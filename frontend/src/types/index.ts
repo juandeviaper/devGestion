@@ -107,7 +107,7 @@ export interface UserStory {
   rol?: string;
   necesidad?: string;
   beneficio?: string;
-  // talla: StorySize; // Deshabilitado temporalmente a favor de puntos
+  talla?: StorySize | null;
   puntos?: number;
   prioridad: Priority;
   estado: ItemStatus;
@@ -219,3 +219,4 @@ export interface MyWorkItems {
     tareas: Task[];
     bugs: Bug[];
 }
+// Refreshed types

@@ -17,7 +17,7 @@ import {
 import ProjectLayout from '../components/ProjectLayout';
 import { storyService, projectService, sprintService, epicService } from '../services/api';
 import { authService } from '../services/authService';
-import type { ProjectMember, Sprint, UserStory, Priority, ItemStatus, Epic, AcceptanceCriterion } from '../types';
+import type { ProjectMember, Sprint, UserStory, Priority, ItemStatus, Epic, AcceptanceCriterion, StorySize } from '../types';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -39,6 +39,7 @@ interface StoryFormData {
     puntos: number | '';
     horas_estimadas: number | '';
     horas_reales: number | '';
+    talla: StorySize | '';
 }
 
 const StoryFormPage: React.FC = () => {
@@ -56,7 +57,8 @@ const StoryFormPage: React.FC = () => {
         asignado_a: '',
         puntos: '',
         horas_estimadas: '',
-        horas_reales: ''
+        horas_reales: '',
+        talla: ''
     });
 
     const [criteria, setCriteria] = useState<CriterionForm[]>([]);
@@ -102,7 +104,8 @@ const StoryFormPage: React.FC = () => {
                     asignado_a: story.asignado_a?.toString() || '',
                     puntos: story.puntos || '',
                     horas_estimadas: story.horas_estimadas || '',
-                    horas_reales: story.horas_reales || ''
+                    horas_reales: story.horas_reales || '',
+                    talla: (story.talla as StorySize) || ''
                 });
                 setInitialSprintId(story.sprint?.toString() || null);
                 setCriteria(story.criterios ? story.criterios.map((c: AcceptanceCriterion) => ({ 
@@ -162,6 +165,7 @@ const StoryFormPage: React.FC = () => {
                 puntos: formData.puntos === '' ? 0 : Number(formData.puntos),
                 horas_estimadas: formData.horas_estimadas === '' ? 0 : Number(formData.horas_estimadas),
                 horas_reales: formData.horas_reales === '' ? 0 : Number(formData.horas_reales),
+                talla: formData.talla === '' ? null : formData.talla as StorySize,
                 proyecto: projectId ? parseInt(projectId) : 0 
             };
 
@@ -443,6 +447,24 @@ const StoryFormPage: React.FC = () => {
                                         </select>
                                     </div>
                                 )}
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2 italic">
+                                        <Sparkles className="w-4 h-4 text-[#10B981]" /> ESTIMACIÓN (TALLA)
+                                    </label>
+                                    <select
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold outline-none focus:ring-2 focus:ring-[#10B981]/20 premium-select transition-all cursor-pointer"
+                                        value={formData.talla}
+                                        onChange={(e) => setFormData({ ...formData, talla: e.target.value as StorySize | '' })}
+                                    >
+                                        <option value="" className="text-black">Sin estimar</option>
+                                        <option value="XS" className="text-black">XS - Extra Small</option>
+                                        <option value="S" className="text-black">S - Small</option>
+                                        <option value="M" className="text-black">M - Medium</option>
+                                        <option value="L" className="text-black">L - Large</option>
+                                        <option value="XL" className="text-black">XL - Extra Large</option>
+                                    </select>
+                                </div>
 
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2 italic">

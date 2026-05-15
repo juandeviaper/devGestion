@@ -28,6 +28,7 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
         beneficio: string;
         puntos: number;
         prioridad: Priority;
+        talla: StorySize | null;
     }>({
         titulo: '',
         rol: '',
@@ -35,6 +36,7 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
         beneficio: '',
         puntos: 0,
         prioridad: 'media',
+        talla: null,
     });
     
     const [preview, setPreview] = useState('');
@@ -68,7 +70,8 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
                 necesidad: '', 
                 beneficio: '', 
                 puntos: 0, 
-                prioridad: 'media' 
+                prioridad: 'media',
+                talla: null 
             });
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
@@ -180,6 +183,7 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
                                 {(['baja', 'media', 'alta'] as Priority[]).map((p) => (
                                     <button
                                         key={p}
+                                        type="button"
                                         onClick={() => setFormData({ ...formData, prioridad: p })}
                                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${formData.prioridad === p ? 'bg-white shadow-sm text-[#10B981] border border-[#DEE2E6]' : 'text-[#ADB5BD]'}`}
                                     >
@@ -187,6 +191,22 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ isOpen, onClose, pr
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div className="col-span-2 space-y-2">
+                            <label className="text-xs font-bold text-[#ADB5BD] uppercase tracking-widest">Estimación (Talla)</label>
+                            <select
+                                className="w-full bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] outline-none transition-all font-bold text-sm text-[#1A1A1A] appearance-none cursor-pointer"
+                                value={formData.talla || ''}
+                                onChange={(e) => setFormData({ ...formData, talla: (e.target.value as StorySize) || null })}
+                            >
+                                <option value="">Sin estimar</option>
+                                <option value="XS">XS - Extra Small</option>
+                                <option value="S">S - Small</option>
+                                <option value="M">M - Medium</option>
+                                <option value="L">L - Large</option>
+                                <option value="XL">XL - Extra Large</option>
+                            </select>
                         </div>
                     </div>
 

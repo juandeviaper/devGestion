@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProjectLayout from '../components/ProjectLayout';
-import { sprintService } from '../services/api';
-import { toast } from 'react-hot-toast';
+import { sprintService, storyService } from '../services/api';
+import { type UserStory } from '../types';
+import toast from 'react-hot-toast';
 import axios from 'axios';
 import { 
     Flag, 
@@ -44,6 +45,7 @@ const SprintFormPage: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(isEditing);
+    const [preselectedStories, setPreselectedStories] = useState<UserStory[]>([]);
 
     useEffect(() => {
         if (isEditing && sprintId) {
@@ -70,6 +72,26 @@ const SprintFormPage: React.FC = () => {
                 .finally(() => setFetching(false));
         }
     }, [isEditing, sprintId, projectId, navigate]);
+
+    useEffect(() => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const storiesIds = queryParams.get('stories')?.split(',') || [];
+        
+        if (!isEditing && storiesIds.length > 0 && projectId) {
+            storyService.getByProject(projectId)
+                .then(res => {
+                    const filtered = res.data.filter(s => storiesIds.includes(s.id.toString()));
+                    setPreselectedStories(filtered);
+                    
+                    // Auto-calculate suggested capacity based on selected stories points
+                    const totalPoints = filtered.reduce((acc, s) => acc + (s.puntos || 0), 0);
+                    if (totalPoints > 0) {
+                        setFormData(prev => ({ ...prev, capacidad: totalPoints }));
+                    }
+                })
+                .catch(err => console.error('Error fetching preselected stories:', err));
+        }
+    }, [projectId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,7 +120,7 @@ const SprintFormPage: React.FC = () => {
                 toast.success('Sprint actualizado con éxito');
             } else {
                 const queryParams = new URLSearchParams(window.location.search);
-                const storiesIds = queryParams.get('stories')?.split(',').map(id => parseInt(id)) || [];
+                const storiesIds = queryParams.get('stories')?.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) || [];
                 
                 await sprintService.create({
                     ...finalData,
@@ -182,6 +204,43 @@ const SprintFormPage: React.FC = () => {
                                 onChange={(e) => setFormData({...formData, objetivo: e.target.value})}
                             ></textarea>
                         </div>
+
+                        {/* Historias Incluidas (UX Improvement) */}
+                        {!isEditing && preselectedStories.length > 0 && (
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B] ml-1">
+                                    <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center text-[10px]">03</span>
+                                    Historias Incluidas ({preselectedStories.length})
+                                </label>
+                                <div className="bg-[#F8F9FA] rounded-[24px] p-4 max-h-60 overflow-y-auto space-y-2 border border-transparent hover:border-blue-100 transition-all">
+                                    {preselectedStories.map(story => (
+                                        <div key={story.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-[#E9ECEF] shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[8px] font-black text-[#64748B] bg-[#F8F9FA] px-1.5 py-0.5 rounded border border-[#E9ECEF]">HU-{story.id}</span>
+                                                <p className="text-[11px] font-bold text-[#1A1A1A] truncate max-w-[200px]">{story.titulo}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">{story.puntos || 0} pts</span>
+                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase ${
+                                                    story.talla === 'XS' ? 'bg-slate-500 text-white' :
+                                                    story.talla === 'S' ? 'bg-emerald-500 text-white' :
+                                                    story.talla === 'M' ? 'bg-blue-500 text-white' :
+                                                    story.talla === 'L' ? 'bg-orange-500 text-white' :
+                                                    story.talla === 'XL' ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-500'
+                                                }`}>
+                                                    {story.talla || '?'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="pt-2 text-right">
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">
+                                            Total Puntos: {preselectedStories.reduce((acc, s) => acc + (s.puntos || 0), 0)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Fechas */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

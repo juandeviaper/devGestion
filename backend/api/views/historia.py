@@ -124,13 +124,18 @@ class HistoriaUsuarioViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def backlog(self, request):
         """
-        Retorna las historias del proyecto que NO están asignadas a ningún sprint.
+        Retorna las historias del proyecto que NO están asignadas a ningún sprint
+        y que no están terminadas (Backlog disponible para planificación).
         """
         proyecto_id = request.query_params.get('proyecto')
         if not proyecto_id:
             return Response({'error': 'Se requiere proyecto_id'}, status=status.HTTP_400_BAD_REQUEST)
         
-        queryset = self.get_queryset().filter(proyecto_id=proyecto_id, sprint__isnull=True)
+        queryset = self.get_queryset().filter(
+            proyecto_id=proyecto_id, 
+            sprint__isnull=True
+        ).exclude(estado='terminado')
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

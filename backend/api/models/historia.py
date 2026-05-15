@@ -61,7 +61,7 @@ class HistoriaUsuario(models.Model):
     necesidad = models.TextField(blank=True)
     beneficio = models.TextField(blank=True)
     
-    talla = models.CharField(max_length=5, choices=TALLA_CHOICES, default='M')
+    talla = models.CharField(max_length=5, choices=TALLA_CHOICES, null=True, blank=True)
     prioridad = models.CharField(max_length=10, choices=PRIORIDAD_CHOICES, default='media')
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='historias')
